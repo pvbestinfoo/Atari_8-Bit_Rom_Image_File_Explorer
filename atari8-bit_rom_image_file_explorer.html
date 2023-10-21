@@ -4449,7 +4449,7 @@
         var blocks = [];
         var block = { lines: [], errs: 0, bll: 0 };
         var nbrk = 0;
-        var _sh = false; // valid the console.log() DISASSEMBLE HINT display in the console
+        var _sh = false; // if true => valids the console.log() for displaying disassembling hints in the console
 
         //(PVB MOD) initialization of the "asm" array
         function asmlist_add_flags(asmlist) {
@@ -5254,7 +5254,8 @@
         var f = _shown;
         var s = "Atari 8-bit rom image file explorer - Listing";
         if (!h) { //request to save in txt format: _txt("#show") get the text (inner text) of the listing display in the html page
-            var str = s + "\n\n" + f.name + "\n\n" + _txt("#show") + "\n\nThis text listing is given without any warranty - PVBestInFoo on @github";
+            var str = s + "\n\n" + f.name + "\n\n" + _txt("#show") + "\n\nThis text listing is given without any warranty\n";
+            str += "PVBestInFoo on @github https://github.com/pvbestinfoo/Atari_8-Bit_Rom_Image_File_Explorer";
             save_bytes(f.name + ".txt", str);
         }
         else { //request to save in html format: get the (inner html) of the listing display in the html page
@@ -5272,7 +5273,8 @@
                 <div><pre>`;
             strhtml += document.querySelector("#show").innerHTML;
             strhtml += `</div></pre><br />
-            This HTML page may have bugs and is given without any warranty - PVBestInFoo on @github
+            This HTML page may have bugs and is given without any warranty<br />
+            <a href="https://github.com/pvbestinfoo/Atari_8-Bit_Rom_Image_File_Explorer">PVBestInFoo on @github</a> 
             </body>
             </html>`;
             save_bytes(f.name + ".html", strhtml);
@@ -8094,7 +8096,7 @@
             <div id="menu_container"></div>
             <p style="text-align:center;color:#999;font-weight:300">
                 <span class='open' onclick='_q("#fe").click()'>Open</span><br />
-                <a href="https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer">https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer</a><br />
+                <a href="https://github.com/pvbestinfoo/Atari_8-Bit_Rom_Image_File_Explorer">github.com/pvbestinfoo/Atari_8-Bit_Rom_Image_File_Explorer</a><br />
                 <i>Based upon the work of :<br />
                 <a href="https://github.com/rossumur/esp_8_bit">https://github.com/rossumur/esp_8_bit</a></i><br /><br />
                 <i><b>Ctrl+O</b> opens File Dialog</i><br />
