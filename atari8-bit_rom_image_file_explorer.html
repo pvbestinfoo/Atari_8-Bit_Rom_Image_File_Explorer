@@ -496,11 +496,20 @@
         link.click();
     }
 
+    function save_as_png(name, data) {
+        var blob = new Blob([data], { type: "application/data" });
+        var link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = name;
+        link.click();
+    }
+
     var _hex = "0123456789ABCDEF";
     function hex(i, len) {
         var s = '';
         if (!len) //(PVB COM) taille par defaut = 2 caracteres
             len = 2;
+        if (i >> (len * 4)) len++; //(PVB TEST) // protection if len if one too small
         while (len--)
             s += _hex[(i >> (len * 4)) & 0xF];
         return s;
@@ -2125,12 +2134,13 @@
     }
 
     function check_init(name, dname) {
-        _checks[name] = _checks[name] || 0;
+        _checks[name] = _checks[name] | 0; //(PVB TEST) || previously
         var cur = _checks[name] ? _checks[name] : 0;
         return `<span onclick="check_click('${name}')" ${cur ? "class='hilite'" : ""}>${dname}</span>`;
     }
 
-    function check_click(name, n) {
+    //function check_click(name, n) { //(PVB TEST)
+    function check_click(name) {
         _checks[name] ^= 1;
         check_changed(name, _checks[name]);
     }
@@ -2167,7 +2177,7 @@
                         c += 0xE000;
                         break;
                     default:
-                        if (c < 0x20 || c > 0x7E)   // keep printing chars whole
+                        if (c <= 0x20 || c > 0x7E)   // keep printing chars whole //(PVB MOD) include the 0x20 char
                             c += 0xE000;
                 }
                 c = String.fromCharCode(c);
@@ -2302,11 +2312,12 @@
 
     function show_ataritext(f, lst) {
         render_file(f);
-        var layout = _radios["layout"].value;
+        var layout = _radios["layout"].value; //(PVB COM) 0 = 38, 1 = 40, 2 = 80, 3 = Wide
+        var idnt = _checks['indent']; //(PVB ADD)
         var cols = layout < 2 ? 40 : 80;
         if (layout == 3)
             lst.forEach(s => cols = Math.max(cols, s.length));
-        lst = atari2ascii(lst, f.ext == "bas");
+        lst = atari2ascii(lst, idnt); //(PVB MOD) previously //lst = atari2ascii(lst, f.ext == "bas");
 
         var ta = editor();
         if (layout == 0) {
@@ -2315,6 +2326,7 @@
         }
         else
             ta.style.paddingLeft = '0px';
+
         if (layout == 3)
             ta.style.fontSize = ta.style.lineHeight = '8px';
         else {
@@ -4837,12 +4849,12 @@
     
     //(PVB ADD)
     function isAtariNameChar(str, md) { //isAtariText // valid filename char are 'space' 0-9 A-Z a-z
-    // plus '@' and '_' for myDos fileName
+    // plus '@' and '_' for myDOS fileName
         for (var i = 0; i < str.length; i++) {
             var c = str[i];
             if (!((c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A))) //not OK if not alphabet
                 if (!(c == 0x20)) //not OK if not 'space'
-                    if (!(md && (c == 0x40 || c == 0x5F))) //note OK if not '@' or '_' (for myDos fileName)
+                    if (!(md && (c == 0x40 || c == 0x5F))) //note OK if not '@' or '_' (for myDOS fileName)
                         return false; //exit because char not OK
         }
         return true;
@@ -5890,7 +5902,7 @@
     //0x80 value: File (or MyDOS DIRECTORY) deleted for any DOS (all other bits are cleared) (may be recovered if not overriden ?)
     //0x40 bit 6: File exits and in use for any DOS (normal), then bit 7 is clear. Bit cleared for a MyDOS DIRECTORY.
     //0x20 bit 5: File Locked (protected from overwriting and deleting) for any DOS (appears with '*' in directory).
-    //0x10 bit 4: bit set only for Mydos DIRECTORY (bits 6, 2 and 1 then have the value 0)
+    //0x10 bit 4: bit set only for MyDOS DIRECTORY (bits 6, 2 and 1 then have the value 0)
     //0x08 bit 3: not used
     //0x04 bit 2: is used by MyDOS only, if set means that file has a 16bits sector linking (MyDOS non-DOS2x compatible)
     //0x02 bit 1: is set, file created by DOS2x (if cleared, file created by DOS1). Set also fo a MyDOS file.
@@ -5926,17 +5938,18 @@
                 console.log("ATR Constructor() => name '" + name + "' is not ATX, nor PRO, nor XFD, nor ATR !!! => Convert it into a disk with 6 bytes of boot.."); //(PVB CONSOLE HINT)
                 var m = d.length;
                 if (m > (92160 - 6)) { //128*720 bytes (minus 6 bytes for boot)
-                    m = 92160 - 6;
+                    m = 92160 - 6; //clipped !
                     console.log("ATR Constructor() => '" + name + "' size is above 9260 b1ytes !! => Clip its data to size the ATR disk..."); //(PVB CONSOLE HINT)
                 }
                 var z = new Uint8Array(92160); //create a new 92160 bytes disk (default size)
-                z.set([0, 0x03, 0, 0x10, 0x06, 0x10], 0); //put a "standard" boot header
+                z.set([0, 0x03, 0, 0x07, 0x06, 0x07]); //put a "standard" boot header 3 sectors at $1000
                 z.set(d.subarray(0, m), 6); //copie the rest of data (maximum m = 92160 - 6) // remaining data are clipped
                 d = XFD.to_atr(z); //add the ATR header
                 this.restructured = true; //flag for identifyong the making of the ATR file from scratch data
             }
-            //(PVB COM "else" this is an ATR file, obviously
+            //(PVB COM) "else" here this is an ATR file, obviously
             //(PVB END OF ADD)
+            //(PVB TEST the size annd sector count)
             this.d = d;
             this.name = name;
             this.size = (le16(d, 2) + (d[6] << 16)) << 4;
@@ -6081,10 +6094,10 @@
                         var end = this.sector_offset(sector) + this.sector_size; //end of file pointer
                         var len = d[end - 1]; //len of data in the sector is set in the last byte of the sector
 
-                        if (tdos == 7) { //MyDOS 16 bits next sector
-                            var next = le16(d, end-2);
-                            if (!f.dirEntry.flag & 0x04) {
-                                dirEntry.err += " >MyDos 16bit sector chain flag not set! ($04)";
+                        if (tdos == 7 || tdos == 8) { //MyDOS 16 bits next sector
+                            var next = d[end-3] * 256 + d[end-2];
+                            if (!dirEntry.flag & 0x04) {
+                                dirEntry.err += " >MyDOS 16bit sector chain flag not set! ($04) but used by default";
                                 console.log("one_dir() =>Error! File#" + idf + ": MyDOS 16bits " + dirEntry.name + " not set in thedirectory");
                             }    
                         }
@@ -6237,10 +6250,10 @@
                     console.log("get_dir() => No DOS3 directory entry in 16-23! Aborting process !");
                 }
             }
-            else if (this.dosType > 0) {
+            else if (this.dosType > 0) { //(PVB COM) not for DOS3
                 console.log("get_dir() => Retreiving DOS1, DOS2x or MyDOS disk directory at 361-368...");
                 dirs = this.get_dir_range(361, 369);
-                if (dirs.length < 1) {
+                if (dirs.length < 1 && this.dosType < 8) { //(PVB TEST) Not for MyDOS4.5x HD disk
                     console.log("get_dir() => No DOS2x directory found at 361-368.... let's try into the whole disk...");
                     dirs = this.get_dir_range(4, this.sector_count);  // try the whole disk
                 }
@@ -6249,7 +6262,7 @@
                     this.dir_sector = 361;  // didn't find one, so use default (that is sector 361)
                 }
                 console.log("get_dir() => Try and find files that don't have a real directory entry like the erased ones...");
-                //(PVB TODO) // WIP // find other dirs only if not a DOS2x disk ? like Subdir that are part of MyDos system ??
+                //(PVB TODO) // WIP // find other dirs only if not a DOS2x disk ? like Subdir that are part of MyDOS system ??
                 this.scan_files(dirs);      // try and find files that don't have a real directory entry 
             }
             return dirs; //(PVB COM) complete directory table is returned, 'dirs' is empty if no file found
@@ -6377,14 +6390,14 @@
                 });
                 f.fsize = data.length; //(PVB ADD) fsize 
             }
-
             return new Uint8Array(data);
         }
         //(PVB ADD) the identify_dos() function
         //(PVB TODO) optimize code to avoid repeating the same code & add other DOS support/// WIP ///
         identify_dos() {//identify_dos() is called by the constructor
             //let's assume that return value is -1 if no DOS found, 0 for Sparta, 1 for DOS1, 2 for DOS2.0, 2.5 dor DOS2.5, 3 for DOS3, 
-            //4 for DOS4/DOSXL, 5 for DOSXE, 6 for MYDOS compatible with DOS2x, 7 for MYDOS with flag 03 (not compatible with DOS2x)
+            //4 for DOS4/DOSXL, 5 for DOSXE, 6 for MyDOS compatible with DOS2x, 7 for MyDOS with flag 03 (not compatible with DOS2x)
+            //8 for MyDOS4.5x with more than 1440 sectors
             if (this.sparta)
                 return 0;
             //default
@@ -6413,20 +6426,25 @@
             //VTOC must start with $02, $03 or higher byte, contain $00 at offset $37, and has a total-of-sector value
             if (t == 0x2C4 && vtocSect[0] == 2 && vtocSect[0x37] == 0) { //VTOC flag must be 02 for MyDOS compatible with DOS2x
                 if (sc == 1040) str += " >720-sector MyDOS disk on a 1040-sector disk";
-                idos = 6; //Mydos 720 sectors / 128B or 256B > "Single" or "Double"
+                idos = 6; //MyDOS 720 sectors / 128B or 256B > "Single" or "Double"
             }
             else if (t == 0x403 && vtocSect[0] >= 3 && vtocSect[0x37] == 0) { //VTOC flag >= 03 is for 1040 sector or above, single density
                 if (vtocSect[0] == 3 && sc == 720) str += " >1040-sector MyDOS disk clipped into a 720-sector disk";
                 this.vtoc2_sect = 359; //at the minimum
-                idos = 7; //Mydos >= 1040 sectors // 128B > "Enhanced" and more
+                idos = 7; //MyDOS >= 1040 sectors // 128B > "Enhanced" and more
             }
             else if (t == 0x594 && vtocSect[0] >= 3 && vtocSect[0x37] == 0) {
                 if (sc <= 1040 && vtocSect[0] == 3) str += " >1440-sector MyDOS disk clipped into a smaller sector disk";
                 if (vtocSect[0] > 3) this.vtoc2_sect = 359;
-                idos = 7; //Mydos >= 1440 sectors // 256B > Double Side / Double Density
+                idos = 7; //MyDOS >= 1440 sectors // 256B > Double Side / Double Density
             }
-            if (idos >= 6) { //MyDos
-                if (this.d[16] != 0x4D) str += " >'M' byte signature is missing in the MyDos boot sector"; //info
+            else if (t > 0x594 && s <= t && t <= sc && vtocSect[0] > 3 && vtocSect[0x37] == 0 && vtocSect[0x38] == 0x7F) {
+                if (sc <= t) str += " >MyDOS4.5x disk clipped into a smaller sector disk";
+                this.vtoc2_sect = 360 - vtocSect[0] + 3; //compute the 1st VTOC sector, it works for 256 byte sector
+                idos = 8; //MyDOS4.5x > 1440 sectors // 256B
+            }
+            if (idos >= 6) { //MyDOS exit
+                if (this.d[16] != 0x4D) str += " >'M' byte signature is missing in the MyDOS boot sector"; //info
                 this.totalBloc = t;
                 this.freeBloc = s;
                 if (str) this.dirErrorStr = str;
@@ -6926,7 +6944,7 @@
         var ts = atr.sector_count; //(PVB ADD)
         if (ts <= 720) {
             // 720 sectors => Density 128 B/sect, ATARI 810 drive => for DOS1 & DOS2.0S, compatible all DOS;
-            //             => Density 256 B/sect, ATARI 815 drive => for DOS2.0D, compatible with OSS DOS XL, DOS XE, Mydos, Sparta
+            //             => Density 256 B/sect, ATARI 815 drive => for DOS2.0D, compatible with OSS DOS XL, DOS XE, MyDOS, Sparta
             density = atr.sector_size == 128 ? "Single Density" : "Double Density";
         }
         else if (ts > 720 && ts <= 1040) {
@@ -6934,13 +6952,19 @@
             density = "1050 Enhanced Density (Medium Density)";
         }
         else if (ts > 1040 && ts <= 1440) {
-            // 2x720 sectors => Density 256 B/sect, ATARI XF551 drive => for DOSXE, compatible with MyDos (?), Sparta
+            // 2x720 sectors => Density 256 B/sect, ATARI XF551 drive => for DOSXE, compatible with MyDOS (?), Sparta
             density = "Double Sided / Double Density";
             //(PVB TODO) Support DOS XE... /////////////////////////// WIP //
-            //if (!atr.dosType != 6) //(PVB TODO) 6 was for MyDos => update if condition is for DOS XE
+            //if (!atr.dosType != 6) //(PVB TODO) 6 was for MyDOS => update if condition is for DOS XE
             //    formatStrError += "; Disk is a 1440 sectors DOS disk that can also be a DOS XE disk - not supported yet";
         }
-        else console.log("show_atr() file " + atr.name + " has a wrong unknown sector_count: " + sc);
+        else if (ts > 1440 && atr.dosType == 8) { //(PVB TEST) MyDOS4.5x
+            density = "MyDOS4.5x HD disk format";
+        }
+        else { //(PVB TEST)
+            density = "Unknown format disk with " + ts + " Sectors of " + atr.sector_size + " bytes";
+            console.log("show_atr() file " + atr.name + " has a wrong unknown sector_count: " + ts);
+        }
         
         txt.push(`; <b>Image has ${ts} ($${ts.toString(16).toUpperCase()}) sectors of ${atr.sector_size} bytes - ` + density + "</b>"); //(PVB MOD)
         //(PVB ADD)
@@ -6957,6 +6981,7 @@
                 case 3: txt.push(`; DOS3 ${t1}, 1 bloc is 8 sectors`); break;
                 case 6: txt.push(`; MyDOS ${t1} (compatible with DOS2), ${t2}`); break;
                 case 7: txt.push(`; MyDOS ${t1} (not DOS2 compatible), ${t2}`); break;
+                case 8: txt.push(`; MyDOS4.5x HD ${t1} (more than 1440 sectors), ${t2}`); break; //(PVB TEST)
             }
             if (atr.dirErrorStr) txt.push(`; WARNING${atr.dirErrorStr}`);
             if (atr.freeBloc || atr.totalBloc) {
@@ -7361,6 +7386,10 @@
         console.log("load_data() loads the 'isDisk' into an ATR file..."); //(PVB HINT)
         //(PVB MOD) improvement of the files array
         var atr = new ATR(a, name);
+        if (!atr) {
+            console.log("load_data() & ATR Constructor error - file " + name + " cannot be converted into ATR");
+            return null;
+        } 
         var files = []; //"files" array is the list of files to be displayed in the blue directory on page left by render_state(m)
         if (!atr.restructured) { //(PVB ADD) if "restructured" no need to seek for a directory if it is an restructured ATR disk
             var dirs = atr.get_dir();
@@ -7774,6 +7803,8 @@
         var isTxt = _exts[f.ext] ? _exts[f.ext].is_txt : false;
         var isImg = _exts[f.ext] ? _exts[f.ext].is_img : false;
         isImg = isImg || f.ext == 'fnt';
+        isTxt = isTxt || f.ext == 'txt'; //(PVB TEST)
+
         var pre = !isTxt && !isImg;
 
         var isRomdump = f.type == "isRomdump";
