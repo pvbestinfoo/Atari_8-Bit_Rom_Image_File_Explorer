@@ -447,6 +447,7 @@
         background: #CCF;
     }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
     var _ajax = function (m, u, c, d) {
         var x = new XMLHttpRequest;
@@ -495,14 +496,21 @@
         link.download = name;
         link.click();
     }
-
-    function save_as_png(name, data) {
-        var blob = new Blob([data], { type: "application/data" });
-        var link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = name;
-        link.click();
+    //(PVB ADD) Save the editor() DIV id = "atari_text" into an PNG image
+    function save_as_png() {
+        console.log("save_as_png() =>Try to save the editor() into PNG image...")
+        html2canvas(editor()) //call to an external <script> function
+            .then((canvas) => {
+                var link = document.createElement("a");
+                link.href = canvas.toDataURL("image/png");
+                link.download = _shown.name + ".png";
+                link.click();
+            })
+            .catch(function (error) {
+            console.error('save_as_png() => Error something went wrong!', error);
+            });
     }
+    //(PVB END OF ADD)
 
     var _hex = "0123456789ABCDEF";
     function hex(i, len) {
@@ -1385,7 +1393,7 @@
                 } else {
                     dst_width /= 4;
                 }
-                pal_size = f.ext == "g10" ? 9 : 0;
+                pal_size = f.ext == 'g10' ? 9 : 0;
                 break;
         }
 
@@ -2174,7 +2182,7 @@
                     case 0x7D: // } in ascii, upleft in atari
                     case 0x7E: // ~ in ascii, left triangle in atari
                     case 0x7F: // right triangle in atari
-                        c += 0xE000;
+                        c += 0xE000; //(PVB COM) +E0xx is the specific Atari Chartset in the css embeded font style
                         break;
                     default:
                         if (c <= 0x20 || c > 0x7E)   // keep printing chars whole //(PVB MOD) include the 0x20 char
@@ -4988,8 +4996,8 @@
         "man": { name: "Manual", is_txt: true },
 
         "--1": { name: "Font & Graphics" },
-        "fnt": { name: "Font File", is_txt: true, font_set: true },
-        "set": { name: "Font File", is_txt: true, font_set: true },
+        "fnt": { name: "Font File", font_set: true }, //(PVB MOD)
+        "set": { name: "Font File", font_set: true }, //(PVB MOD)
 
         "gr7": { name: "Graphics 7 Image", is_img: true },
         "gr8": { name: "Graphics 8 Image", is_img: true },
@@ -5227,13 +5235,13 @@
 
     function save(as_lst) {
         var f = _shown;
-        if (as_lst) {
+        if (as_lst) { //(PVB COM) [Save As LST] Button 
             var data = get_ataritext();
             var n = f.name;
             if (n.substr(n.length - 4).toLowerCase() == ".bas")
                 n = n.substr(0, n.length - 4);     // trim ".BAS"
             save_bytes(n + ".LST", data);
-        } else if (f.packed_img) {
+        } else if (f.packed_img) { //(PVB COM) [Download original file] Button 
             if (f.rgb)
                 save_bytes(f.name + ".rgb", f.rgb);
             else
@@ -6765,7 +6773,7 @@
         var n = 0  //number of banks with same characteristic that are switched
         var k = 0; //number of bank * 2
         var l = 0; //bank counter
-        _bShowA5200Equates = r.romMachine == "5200" ? true : false;
+        _bShowA5200Equates = r.romMachine == '5200' ? true : false;
         r.rom_flag = 0xFF; //set default
         r.rom_init = 0; //set default
         while (n < bankMap.length) { //for every map
@@ -7067,7 +7075,7 @@
                 strList += (" $"+ hex(fe.fsize,5) + pad_dir((" (" + fe.fsize + ")"), 9)); //file size
                 if (fe.err) strList += fe.err;
                 if (!fe.fsize || !fe.sectors.length) strList += " >empty entry"; //2 cases from which to be sure to identify an empty file, whatever dos
-                strList += (fe.numidf == "--" ? " >may be recovered ?\n" : "\n");
+                strList += (fe.numidf == '--' ? " >may be recovered ?\n" : "\n");
             });
             txt.push(strList + ";");
             txt.push("");
@@ -7253,7 +7261,7 @@
             }
             //other files
 
-            var e = f.ext == "???" ? _exts["dat"] : _exts[f.ext]; //(PVB ADD) mandatory : if extension is unknown (???), then force .dat
+            var e = f.ext == '???' ? _exts["dat"] : _exts[f.ext]; //(PVB ADD) mandatory : if extension is unknown (???), then force .dat
 
             if (e && e.is_img) {
                 show_img(f);
@@ -7263,6 +7271,7 @@
                 show_txt(f);
                 return;
             }
+            
             console.log("show(id) =>...render_file (f)..."); //(PVB CONSOLE HINT)
             render_file(f); //(PVB COM) display title and selection list on page top right
 
@@ -7514,7 +7523,7 @@
 
     function toggle(eid) {
         var e = _q(eid);
-        e.style.display = e.style.display == "none" ? "block" : "none";
+        e.style.display = e.style.display == 'none' ? "block" : "none";
     }
 
     //(PVB ADD) show_bank(id) function is called by show_rom(f)
@@ -7550,11 +7559,12 @@
             "isTxtImg" :  [0,0,0,0,0,1,0, 0, 1,1,1,1,1,1,1,1,1,1, 0, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 0, 1,1,1,1,1,0,0,0,0],
             "isRomdump" : [0,0,0,0,0,1,0, 0, 0,0,0,0,0,0,0,0,0,0, 0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0, 0,0,0,0,0,1,1,1,1]
         };
+        var e = f.ext == '???' ? "dat" : f.ext; //(PVB MOD) force extension "???"" to be a "DAT" in the list
         var s = `<div style='display:inline-block'><label>Ext Type :<select onchange="show_as(this.value)">`;
         //(PVB MOD) Add display of extension in the list
         //previously// Object.keys(_exts).forEach(ext => s += `<option ${ext[0] == '-' ? "disabled" : ""} value='${ext}' ${ext == f.ext ? 'selected' : ''}>${_exts[ext].name} ${ext[0] == '-' ? "" : " (" + ext + ")"}</option>`);
         var i = 0;
-        Object.keys(_exts).forEach(ext => s += `<option ${_entable[f.type][i++] ? "" : "disabled"} value='${ext}' ${ext == f.ext ? 'selected' : ''}>${_exts[ext].name} ${ext[0] == '-' ? "" : " (" + ext + ")"}</option>`);
+        Object.keys(_exts).forEach(ext => s += `<option ${_entable[f.type][i++] ? "" : "disabled"} value='${ext}' ${ext == e ? 'selected' : ''}>${_exts[ext].name} ${ext[0] == '-' ? "" : " (" + ext + ")"}</option>`);
         s += `</select></label></div>`;
         return s;
     }
@@ -7802,8 +7812,9 @@
         var isCode = _exts[f.ext] ? _exts[f.ext].is_code : false;
         var isTxt = _exts[f.ext] ? _exts[f.ext].is_txt : false;
         var isImg = _exts[f.ext] ? _exts[f.ext].is_img : false;
-        isImg = isImg || f.ext == 'fnt';
-        isTxt = isTxt || f.ext == 'txt'; //(PVB TEST)
+        var isFnt = _exts[f.ext] ? _exts[f.ext].font_set : false; //(PVB ADD) replace "f.ext == 'fnt'"
+        isImg = isImg || isFnt || false; //(PVB TEST) to force true or false, and not undefined
+        isTxt = isTxt || false; //(PVB TEST)
 
         var pre = !isTxt && !isImg;
 
@@ -7821,7 +7832,9 @@
                 ${f.ext == 'bas' ? check_init('indent', 'Indent') : ""}
                 ${f.ext == 'fnt' ? check_init('multicolor', 'Multicolor') : ""}
                 ${radio_init('layout', ['38', '40', '80', 'Wide'])}`;
+            //(PVB MOD) Buttons are valid for text only, not img, not font 
             buttons += `<button type="button" onclick="save(1)">Save As LST</button>`;
+            buttons += `<button type="button" onclick="save_as_png()">Save As PNG Image</button>`;
         }
         if ((f.ext == 'fnt') || (isImg && is_palettable(f.ext))) {
             controls += `<div class='palette' style='display:inline-block'>${palette(_palette)}</div>`;
