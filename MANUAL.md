@@ -1,1 +1,1 @@
-*Hello World*
+***Atari Chars: Internal Antic Char versus ATARI ASCII (ATASCII)***
