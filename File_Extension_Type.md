@@ -8,7 +8,7 @@ If a file is loaded in the tool with an extension a type is not listed, the Tool
 
 If it not succeed, then the default extension DAT is set to the file in order to display it as Hexdump.
 
-![389260551-a252b03d-9d5c-4dad-9977-b335023afd5b](https://github.com/user-attachments/assets/6950fd2d-3781-4ab1-aa21-49eee4bd9bff)
+![image](https://github.com/user-attachments/assets/1d5d966d-1f70-4348-8c2f-4787387a9c55)
 
 ## DAT extension files
 
@@ -143,26 +143,26 @@ The Tool calulates a start address at $8000:
 
 Let's figure that you have this BASIC file in the Tool:
 
-![image](https://github.com/user-attachments/assets/464fb3e1-1737-45f8-aa26-30bad2ccdc85)
+![image](https://github.com/user-attachments/assets/853cecb7-1a23-481c-9cba-8dbbd2edc52c)
 
 **1/** You can use **Save as UTF text**, for you reference to get a text copy on your Client's system.
 Save and open it in a Client's text editor, the result is:
 
-![image](https://github.com/user-attachments/assets/853c623d-7548-4a5d-8be8-7931a8ef6131)
+![image](https://github.com/user-attachments/assets/e4bd3920-ff01-4995-ac80-f5069c4e388d)
 
 => Because with saving as UTF Text File, each char is converted into the closest displayable char available on the Client. Inverted Atari chars are converted to normal char, except the Inverted SPACE char.
 
 **2/** If you use **Save as Atari LST**, the result is not compatible for Client's text editor, so you should not use this feature to get a clean text copy on your Client's system. This is the example:
 
-![image](https://github.com/user-attachments/assets/136b3057-3257-46e7-9360-3f936fc9f402)
+![image](https://github.com/user-attachments/assets/f67de4bd-eac9-4451-9928-c61c1e32fb61)
 
 **3/** Last option you have is to **copy & paste** the text from the Tool Editor to your Client's system text editor:
 
-![image](https://github.com/user-attachments/assets/ca942cef-f453-443e-a0fd-d6eee9a144b9)
+![image](https://github.com/user-attachments/assets/afba56e8-61d4-4ccb-91a6-b43a2c6a799b)
 
 **And if you can change the default monospace font for an Atari System font** previously installed on your Client editor, you will get this very close result:
 
-![image](https://github.com/user-attachments/assets/619418a4-a8d2-47b9-b0e8-5778dbe0ab5d)
+![image](https://github.com/user-attachments/assets/f7fb7ca5-28b5-4516-9794-ad2dfe30dd59)
 
 
 _PVBest infoo Nov 2024_
