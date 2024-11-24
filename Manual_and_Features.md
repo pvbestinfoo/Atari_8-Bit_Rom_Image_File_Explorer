@@ -331,11 +331,11 @@ The goal is to gain display size.
 
 Example of Extract menu for an Atari DOS file:
 
-![image](https://github.com/user-attachments/assets/17a650ad-405a-4fc7-bda8-df4792067acd)
+![image](https://github.com/user-attachments/assets/571e977a-056c-4024-9574-d6072cbeb59e)
 
 Example of Extract menu for an Atari Disk Image file:
 
-![image](https://github.com/user-attachments/assets/5dae29b4-6825-4239-9f6e-d8321ec42915)
+![image](https://github.com/user-attachments/assets/2000d563-3624-4db1-9ed8-518cf1e49ca1)
 
 Buttons are greyed, that is inactive, if no extract has been set and launched.
 With the Extract Menu active, the hexdump of the file is displayed in the right panel.
@@ -370,13 +370,13 @@ Then click on the "Search Menu" buttons that will shift the memory with the indi
 
 Example of a font that is retrieved into the PROTECTO.COM executable file at offset $30E
  
-![image](https://github.com/user-attachments/assets/ed5182c0-f1cf-45b0-aee2-a580c80c1646)
+![image](https://github.com/user-attachments/assets/b9ac50cf-700c-46ba-a082-7939df244eec)
 
 #### Example for Pictures:
 
 Example of graphic GR7 pictures found into the SPACON.FLI executable file at offset $8AE
 
-![image](https://github.com/user-attachments/assets/428ca1a5-3cc9-43dd-81c3-9057ffde18ea)
+![image](https://github.com/user-attachments/assets/20fd3072-d607-42e0-bc5b-4c4443d81862)
 
 ## 4. Tool Limitations and other information
 
@@ -384,7 +384,7 @@ Example of graphic GR7 pictures found into the SPACON.FLI executable file at off
 
 Atari Control Chars in ATASCII are the following chars:
 
-![image](https://github.com/user-attachments/assets/233c6dee-bf72-47c5-a842-d92d4790978f)
+![image](https://github.com/user-attachments/assets/5ac42ec0-2caf-47e9-b812-cc931715d75f)
 
 These chars cannot be displayed in Atari text files, as they control the display of text in the Editor.
 
@@ -397,11 +397,11 @@ Happily, the control chars work on Atari, but not on the Tool that is a differen
 The Tool's limitation is that the $9B char can not be displayed with its Atari 'E' symbol in a _LST_ file.
 Let's figure out that you want to code a BASIC source code like this with the Tool's Editor and Virtual ATASCII keyboard (of chapter 3.1.):
 
-![image](https://github.com/user-attachments/assets/6c17d2eb-0bba-4194-9c6d-c2807a911058)
+![image](https://github.com/user-attachments/assets/2fa8ffb5-d2ec-413d-aac1-7283a766aeef)
 
 Then save it as a LST file, and re-open it the Tool, you will get:
 
-![image](https://github.com/user-attachments/assets/2f37e24b-9d67-43e3-93a4-526ebc19fa73)
+![image](https://github.com/user-attachments/assets/967a55b6-a3c3-4e39-9659-9890b5eab53b)
 
 The _$9B EOL_ char made an unwanted line feed.
 Happily, this limitation should not occur often in your code...
@@ -410,7 +410,7 @@ Happily, this limitation should not occur often in your code...
 
 Example of error display in the right panel if the display of a file goes wrong:
 
-![image](https://github.com/user-attachments/assets/935bc00c-48b5-4104-a12c-46d9653f3303)
+![image](https://github.com/user-attachments/assets/9af9adac-8525-4086-8ba3-112e6d759dde)
 
 The problem should be within the javascript code of the Tool, that is a bug. So please report this to me, I will check and if possible update the code.
 
@@ -422,7 +422,7 @@ Trying to load an Empty Disk Image File into the Tool HTML page => The file will
 
 So an HTML Alert window is displayed. There nothing to do, you can close the image file.
 
-![image](https://github.com/user-attachments/assets/cc5d01f1-10d1-4866-b890-3c95b893b8f1)
+![image](https://github.com/user-attachments/assets/d3a73755-ffe8-403b-914c-c242b188d2cd)
 
 ### 4.4. Limitation of the Tool disassembly process
 
@@ -430,7 +430,8 @@ When an executable file contains several segments pointing at the same addresses
 
 In the following example, the executable loads 2 times the segment $4000-7FFF with different data:
 
-![image](https://github.com/user-attachments/assets/f73d8f1e-128e-48e3-baff-69581b11fcff)
+![image](https://github.com/user-attachments/assets/8beeaaaf-b14c-4b8f-b8fb-a92a5359c664)
 
 
+_PVBest infoo, November 2024_
 
