@@ -18,7 +18,7 @@ The right display panel of the HTML page =>
 
 Disk image files are usually binary image of Atari floppy disks, and have the **ATR, ATX, PRO, XFD** file extensions. They are displayed like this:
 
-![image](https://github.com/user-attachments/assets/8f3491b5-cf6d-45d8-baed-4fb7a25b69b3)
+![image](https://github.com/user-attachments/assets/89e10946-ed0f-47db-834c-16835c01938c)
 
 Left display panel => The disk image name and size, and the retrieved directory with all the validated files from the disk DOS structure.
 
@@ -115,7 +115,7 @@ DSK Images files have the **DSK** file extensions. They are displayed like this:
 
 ![image](https://github.com/user-attachments/assets/92e78a55-4d31-411a-a495-c2fc96d4b310)
 
-A DSK file is just a raw disk image file, no analysis of the boot is done, and only the hexdump of the sectors is displayed. The  will nevertheless search for DOS2.X directory.
+A DSK file is just a raw disk image file, no analysis of the boot is done, and only the hexdump of the sectors is displayed. The Tool will nevertheless search for DOS2.X directory.
 
 You can click on **[Download ATR file]** button to convert it into ATR or **[Download XFD file]** to update its extension.
 
@@ -137,7 +137,7 @@ A DAT file is considered as a data file. So only its Hexdump is displayed.
 
 In an Atari Disk Image (image of an Atari floppy disk), the Atari DOS files may have every kind of extensions.
 
-When a file type is unknown (not in the extension list of the previous **1.2 to 1.5 chapters** above), it is considered as *DAT* by the  in order to be displayed. Thus **DAT** is the *default* file type.
+When a file type is unknown (that is not in the extension list of the previous **1.2 to 1.5 chapters** above), it is considered as *DAT* by the Tool in order to be displayed. Thus **DAT** is the *default* file type.
 
 ## 2. Display features
 
@@ -433,5 +433,5 @@ In the following example, the executable loads 2 times the segment $4000-7FFF wi
 ![image](https://github.com/user-attachments/assets/8beeaaaf-b14c-4b8f-b8fb-a92a5359c664)
 
 
-_PVBest infoo, November 2024_
+>PVBest infoo, November 2024
 
