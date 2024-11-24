@@ -28,11 +28,11 @@ ARIFE features a great improvement, the ***ROM image file management***, includi
 For instance, if you load a ROM image file like _'Bounty...rom'_, the system does not really know what this 40KB ROM is about in terms of stucture, load address, layout of memory banks...
 So, the drop-down list selection menu lets you select the possible ROM type from the list, where only 40KB size ROM type entries are filtered and can be selected.
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/3311ace9-d9a6-466e-995c-b424fb7d4a3a)
+![image](https://github.com/user-attachments/assets/236164c6-198c-45ec-b30b-acf3983b561b)
 
 So the obvious choice will be to select the Type_07 for an Atari 5200 ROM, or Type_18 for an Atari 800/XL/XE ROM:
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/dc43aeb8-f119-4f25-937e-6fd791646ab9)
+![image](https://github.com/user-attachments/assets/e81a189a-7824-4a99-bfc5-f64fcf062dca)
 
 To see how to check that Type_18 is the right one, see [Modifying and save a CART cartridge type ROM image file](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/edit/main/README.md#modify-and-save-a-cart-cartridge-type-rom-image-file).
 
@@ -65,7 +65,7 @@ This is how to proceed:
 **2/ Select relevant type:**
 When several types are available and you are not sure of the right one, the simplest would be to test each of them by repeating the present operation until it works in Altirra emulator:
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/611d7e47-129d-402b-b4d4-34a6be67d2b4)
+![image](https://github.com/user-attachments/assets/27ac9658-ca5c-4be4-9fb3-6e4dfc730183)
 
 **3/ Click "Download New Cart" (extension ".car" is added to the file):**
 
@@ -80,14 +80,14 @@ It runs fine!
 **5/ Test it in Retrobat emulationstation for instance.**
 Note that the CART extension shall be in the list of Atari800 system extensions in the _'.emulationstation/es_systems.cfg'_ file.
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/991a96ee-4c7d-489e-84e9-fdf433e18ac6)
+![image](https://github.com/user-attachments/assets/1df0221c-0f2c-4582-81d3-b894fe354137)
 
 If not, you shall add the '.car' and '.CAR' extensions in the config file.
 
 **6/ If it is OK, the emulation station will directly launch and run the proper system configuration.**
 For instance, test it with _'Donkey K...rom.car'_:
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/3e50feb8-94bb-4249-a33c-d30e97e5f7e5)
+![image](https://github.com/user-attachments/assets/b5dac63d-2cf9-408f-be0a-61040aac5549)
 
 It runs fine!
 
@@ -101,11 +101,11 @@ An additionnal ARIFE feature is to support the OS ROM type and display it. This 
 
 For instance, when loading _'ATA..XL.ROM'_ image file, ARIFE will show its hexdump from $C000 address and then you can to disassemble it:
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/dbd7a1b8-c921-4335-ad83-4e16e2d9773f)
+![image](https://github.com/user-attachments/assets/b11d78fe-533d-40b1-86ba-54ffab6139b4)
 
 ...
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/81a2f260-a7f8-41c9-ac37-5bb3ac5d853f)
+![image](https://github.com/user-attachments/assets/87ad4184-343c-454f-ac56-e03a47e5889c)
 
 Please note that OS ROM vectors are not correctly displayed, because the information shown are for standard ROM cartridge where the last 6 bytes stand for:
 - 'BFFA, BFFB': CARTCS" = CARTRIDGE COLD START ADDRESS
@@ -124,13 +124,13 @@ For an OS ROM, the last 6 bytes of the OS ROM shall be read as the 6502 CPU resi
 
 Of course, the disassembly routine improvement applies to the ROM image: just click on the ***<< Toggle Disass/HexDump >>*** button on top of the ROM bank, and the hexdump will be replaced by the disassembly listing of the bank. You can click again to display back the hexdump.
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/2bdab237-2de0-49ae-9068-46d53fc6661e)
+![image](https://github.com/user-attachments/assets/0a87b498-c590-485d-b6fc-4687c1f1baab)
 
 ## Menu for Display & Disassembly options
 
 ARIFE now features a Display & Disassembly option menu:
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/7c2a9136-751a-460b-93a4-3c201714843f)
+![image](https://github.com/user-attachments/assets/0d7ac773-1f7c-4c44-a054-fe56e3e48577)
 
 The Display & Disassembly options are:
 - *Listing display with Atari Font*: just try it!
@@ -155,8 +155,8 @@ Atari 5200 equates are set on when the Atari file is either:
 - the selection of a type_XX coresponding to an Atari 5200 ROM type
 Following is an example of the Atari 5200 OS ROM disassembly with Atari 5200 equates:
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/7aff46a6-9ccb-472a-bc31-c5e66d017832)
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/ff4e8073-9b92-4162-82ab-b4949b1bfd67)
+![image](https://github.com/user-attachments/assets/fbc03498-0909-402a-87be-cb4bf9e42121)
+![image](https://github.com/user-attachments/assets/4fa69601-a042-4eb1-a216-15e3744a911b)
 
 ## Disassembly routine improvement
 
@@ -175,7 +175,7 @@ As a consequence a bloc of disassembly should always start with an entry address
 
 Let's visualy compare previous and actual ARIFE display on same file:
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/01f6cb04-b174-40ce-8b15-718364dfa69e)
+![image](https://github.com/user-attachments/assets/92ab9538-5234-4132-b23e-0014e0f9e50f)
 
 You can check the improved details by compairing the ARIFE result with previous version of ATR Image Explorer on your favorite file disassembly listing.
 
@@ -185,13 +185,13 @@ When a program on boot disk is loaded, only the boot sectors are automatically d
 
 In the next example, let's open a boot disk program. The disassembly listing is displayed for the 2 sectors loaded on boot. Sectors #3 and above are not disassembled:
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/5bc42437-d73d-4f71-9231-62bdb19c21dc)
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/c8e2ac54-a166-4663-a838-d1760afc9fb0)
+![image](https://github.com/user-attachments/assets/fa18b7c0-3cd0-4bcb-a3ff-8dcddb43f5f7)
+![image](https://github.com/user-attachments/assets/85c47e5d-d11e-49b2-9bbe-fca0ce3c0063)
 
 From the above example, the disassembly of the remaining code in sectors #3 and above is accessible thanks to the **ARIFE Extract feature**.
 Click on the ***\<\<E>>*** on the left floater menu:
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/9227fd17-30df-4f07-8241-31e70bae7a5c)
+![image](https://github.com/user-attachments/assets/2ba6542b-cabf-4da4-aa93-30baa7362cb4)
 
 Then ARIFE displays:
 - the full sector hexdump in the _'show'_ windows, with \[sector:offset] index
@@ -200,13 +200,12 @@ Then ARIFE displays:
 
 By reading the 6502 code in the boot disassembly listing, the boot loads 3 sectors, from sector #3, into address $2100:
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/f494e4fe-40cd-455b-9b69-52a8ebff7bf2)
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/f659d279-262e-462a-b480-f03e19b3d685)
+![image](https://github.com/user-attachments/assets/fb60860a-7505-4071-a0b7-650f147dc9c2)
+![image](https://github.com/user-attachments/assets/8bcfbbc5-682f-4399-b495-e5b20b4780ae)
 
 So let's disassemble the corresponding extract, as follows:
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/b8483c0c-2f62-4782-9d93-deb61b37cce9)
-
+![image](https://github.com/user-attachments/assets/3f441824-388a-4b61-a7e7-499748c52b4b)
 
 # The XFD/PRO vs ATR disk image conversion
 
@@ -222,11 +221,11 @@ In case of an ATR file or XFD file loaded in ARIFE that would be smaller than a 
 
 ARIFE now features several possibilities to save the listing for your own purpose, by clicking the corresponding button.
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/db0b9d62-3cda-42ba-88ff-4abc746f0383)
+![image](https://github.com/user-attachments/assets/49a9816b-bebb-433b-a51b-2d3520993b1c)
 
 The display window is the HTML element \<pre id="show"\>, at the bottom right in the ARIFE page - let's call it the _'show'_ window. This is the window that can be saved.
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/4a38bbd2-ce7d-4f6f-9ed1-d043506e7780)
+![image](https://github.com/user-attachments/assets/159a1cec-2877-4175-ab06-c3068cf0d9ff)
 
 Saving possibilities are among the following:
 - Save listing as text: save all the text displayed in the _'show'_ window in simple raw '.txt' file.
@@ -247,7 +246,7 @@ Thanks to these information, ARIFE now supports DOS1 and DOS3.
 
 ARIFE now display more accurate caracteristics of the disk, the boot information according to DOS, and a DOS directory in the _'show'_ window.
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/e969ce02-cc87-40cd-b01a-f280180b02bb)
+![image](https://github.com/user-attachments/assets/2766bcc7-1d40-45bf-a49b-c05949c6ee3b)
 
 As shown on previous screenshots, ARIFE displays on top of the _'show'_ window:
 - the disk information of the Image disk, like "Image has 1040 ($410) sectors of 128 bytes - 1050 Enhanced Density (Medium Density)"
@@ -257,24 +256,25 @@ As shown on previous screenshots, ARIFE displays on top of the _'show'_ window:
 The directory that is displayed on the left in white on blue is the official valid directory handled by ARIFE.
 The directory displayed in the _'show'_ window is a more detailed one. For example:
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/e1af99fc-53c2-44f9-a576-5983d107e98e)
+![image](https://github.com/user-attachments/assets/eea8bd61-3886-4b44-b3f1-f178d7eca361)
 
 The empty and non-compliant files in directory entries are listed and commented, they are not displayed in the blue valid directory.
 As you can see in ARIFE, the $03 & $43 file flags are correctly supported for DOS2.5 disk with 1040 sectors. For example:
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/3045681c-4801-4f1f-bbea-8e172cbbf1c8)
+![image](https://github.com/user-attachments/assets/aad1d504-6f65-41f6-9aea-303f7c0b5e01)
+
 
 ## DOS1 support
 
 Current version of ARIFE handles flawlessly the DOS1 disk system:
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/7a64e8ed-99e5-4a26-b10d-a4648a4d6370)
+![image](https://github.com/user-attachments/assets/99e33e86-6037-4e46-921a-41c401081794)
 
 ## DOS3 support
 
 Current version of ARIFE handles flawlessly the DOS3 disk system:
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/b52f4981-a3a7-4b7b-8cba-800b625d0a3b)
+![image](https://github.com/user-attachments/assets/1b0f8811-27e6-4f11-b357-12ed1e7ef7fc)
 
 ## DOS file segments support improvement
 
@@ -289,22 +289,22 @@ The management of the Atari executable files and their segments have been improv
 
 On the example, the default loading address is $700 for the _'superloa.sys'_ file. Note that only _DOS.SYS_ is loaded at the known $7CB address.
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/ab50c967-c6cc-4507-acfd-27e63e784e3f)
+![image](https://github.com/user-attachments/assets/4c8cae8e-0255-49f4-8215-ec2af27c253f)
 
 **2/ Example of multi header Executable DOS file:**
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/d098c6b0-0eb5-4534-8f7a-20e167c256db)
+![image](https://github.com/user-attachments/assets/b9ff02df-7799-451c-9438-c5860f811937)
 
 **3/Example of the last buggy segment:**
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/9ddfb126-5f4f-42c2-8b1a-81ccbd2087b9)
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/3fcfd3ba-d1bd-40bd-8a4b-3df12bb58ab7)
+![image](https://github.com/user-attachments/assets/e8c114aa-aa37-480f-9204-3ccd1468b58f)
+![image](https://github.com/user-attachments/assets/53c527fc-10b7-4a92-90bf-a055f9d472ca)
 
 A last buggy segment usualy occurs when the last byte of the last sector, corresponding to the data length in the last sector, is wrong.
 
 **4/Example of one byte segment:**
 
-![image](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/assets/123185835/1b07de58-d26e-4015-be61-318c01d89ce5)
+![image](https://github.com/user-attachments/assets/f131c0f1-92ec-417b-888f-16034b04d4ef)
 
 # TO DO
 
