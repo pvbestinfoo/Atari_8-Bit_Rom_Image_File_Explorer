@@ -4,7 +4,7 @@ This web page purpose is to present the features and to give hints on how the **
 
 This is a screenshot of the HTML page at its openning when no image file is loaded:
 
-![image](https://github.com/user-attachments/assets/abf3efeb-400b-4b3a-80e4-11383c0e024b)
+![image](https://github.com/user-attachments/assets/2083b861-5fd6-4af1-8299-cf2707e9e7f1)
 
 The left display panel of the HTML page => display the main menu (Tool letter commands), name of loaded image file, type of image file, directory of readable (validated) Atari files, size of image file.
 
@@ -18,7 +18,7 @@ The right display panel of the HTML page =>
 
 Disk image files are usually binary image of Atari floppy disks, and have the **ATR, ATX, PRO, XFD** file extensions. They are displayed like this:
 
-![image](https://github.com/user-attachments/assets/a993d99d-f067-41f6-bfdd-c528c30d9f9e)
+![image](https://github.com/user-attachments/assets/8f3491b5-cf6d-45d8-baed-4fb7a25b69b3)
 
 Left display panel => The disk image name and size, and the retrieved directory with all the validated files from the disk DOS structure.
 
@@ -30,7 +30,7 @@ The Tool's context button **[Download ATR file]** can convert the _XFD_ file int
 
 Language and Formated text files have the **BAS, LST, ASM, M65, LIS, DOC, ATA, TXT, BAT, MAN** file extensions. They are displayed like this:
 
-![image](https://github.com/user-attachments/assets/38bc6c61-45e1-4b51-beec-a8a056f8b3c2)
+![image](https://github.com/user-attachments/assets/2188fd3e-8a4e-41e2-bdd8-ea9da1a8449a)
 
 Right display panel => The selected file from the left directory is displayed as follows:
 * identified "Ext Type",
@@ -44,7 +44,7 @@ Please note that only "Language and Formated text files" open in an **Editor** w
 
 Font files have the **FNT, CHR** file extensions. They are displayed like this:
 
-![image](https://github.com/user-attachments/assets/6bec2e30-f6fc-4e04-9b0a-e3d773eeacea)
+![image](https://github.com/user-attachments/assets/970381ee-f79b-4ec5-a807-483df15461f9)
 
 Right display panel => The selected file from the left directory is displayed as follows:
 * identified "Ext Type",
@@ -58,7 +58,7 @@ Note: right click on the display window to save it as a picture!
 
 Graphics files have the **GR7, GR8, GR9, GR10, MIC, MCP, APC, PLM, PZM, ILC, INP, CIN, PIC, RAW, SCR, IST, RIP, HIP, TIP** file extensions. They are displayed like this:
 
-![image](https://github.com/user-attachments/assets/137235cb-dd9c-419f-a897-7a7e7df798db)
+![image](https://github.com/user-attachments/assets/521c5b6b-8329-4448-838a-9785a3d1cc03)
 
 Right display panel => The selected file from the left directory is displayed as follows:
 * identified "Ext Type",
@@ -72,7 +72,7 @@ Note: right click on the picture to save it!
 
 Executable Atari DOS files have the **SYS, OBJ, XEX, EXE, COM, BIN** file extensions. They are displayed like this:
 
-![image](https://github.com/user-attachments/assets/9b51d8f6-9d22-456e-9818-4a3250f4e26d)
+![image](https://github.com/user-attachments/assets/464d209c-553a-44e7-a7f0-ac0ff4bf4d82)
 
 Right display panel => The selected file from the left directory is displayed as follows:
 * identified "Ext Type",
@@ -94,7 +94,7 @@ See [chapter 2.2](#22-display-of-executable-atari-dos-files) below for details o
 
 ROM Images files are usually binary image of Atari ROM cartdridges, and have the **BIN, ROM, A52, CAR** file extensions. They are displayed like this:
 
-![image](https://github.com/user-attachments/assets/23898af2-0827-49ca-8737-7d58e692fb78)
+![image](https://github.com/user-attachments/assets/3cb28eb3-522d-449e-951f-27c153456f91)
 
 Left display panel => The ROM image name and size.
 
@@ -113,7 +113,7 @@ If no type is found in the ROM image file, then the possible types are validated
 
 DSK Images files have the **DSK** file extensions. They are displayed like this:
 
-![image](https://github.com/user-attachments/assets/ccfc858d-65e6-4bfd-b406-799f86e24c88)
+![image](https://github.com/user-attachments/assets/92e78a55-4d31-411a-a495-c2fc96d4b310)
 
 A DSK file is just a raw disk image file, no analysis of the boot is done, and only the hexdump of the sectors is displayed. The  will nevertheless search for DOS2.X directory.
 
@@ -123,7 +123,7 @@ You can click on **[Download ATR file]** button to convert it into ATR or **[Dow
 
 ARC Images files have the **ARC** file extensions. They are displayed like this:
 
-![image](https://github.com/user-attachments/assets/0bedb022-f1a9-4542-84bf-b12809710e3f)
+![image](https://github.com/user-attachments/assets/6e2af404-d6d8-42f3-8c9d-b02616c5cf5a)
 
 An ARC file is like a ZIP file, it is an ARChive containning compressed files. Click on **[Extract]** buttons to extract files from ARC archive.
 
@@ -131,7 +131,7 @@ An ARC file is like a ZIP file, it is an ARChive containning compressed files. C
 
 DAT Images files have the **DAT** file extensions. They are displayed like this:
 
-![image](https://github.com/user-attachments/assets/6a5589f9-66a8-456b-ae9b-8d2b997a3ee4)
+![image](https://github.com/user-attachments/assets/97005c25-12c0-4a99-a744-59272f8ad76a)
 
 A DAT file is considered as a data file. So only its Hexdump is displayed.
 
@@ -145,7 +145,7 @@ When a file type is unknown (not in the extension list of the previous **1.2 to 
 
 This is the display option menu that can be hide with the Tool "P" command (see below chapter 3.6)
 
-![image](https://github.com/user-attachments/assets/ac934141-4e79-4954-83a6-995cc51ea66a)
+![image](https://github.com/user-attachments/assets/88bc7e58-84d8-4db8-981b-8e05d1cb820f)
 
 **[1] Dump & Disassembly options**
 
@@ -185,11 +185,11 @@ Don't hesitate to change file extensions from the **[Ext Type]** list to check, 
 
 The Tool trusts the given file extension which is known in the **[Ext Type]** list. For instance, if you load the file _MICROSOF.BAS_ Atari DOS file, it has the extension _.BAS_, so the  will decode it as BASIC and.... this will lead to an error ! The _BAS_ extension seems to be wrong. Look at the screenshot:
 
-![image](https://github.com/user-attachments/assets/c4f514f8-f2dc-4840-b644-7cfd20d1b745)
+![image](https://github.com/user-attachments/assets/38259de7-adfa-485f-8d0e-7f102522937d)
 
 In fact this file an executable file, this is the "Microsoft ATARI 800 BASIC V2.5" utility program for Atari. So change its extension from the **[Ext Type]** list to _.COM_ for instance. Then you will get the full executable file display with headers and segments:
 
-![image](https://github.com/user-attachments/assets/13cf8705-d754-4f81-8e82-e5a247dd68c3)
+![image](https://github.com/user-attachments/assets/816421a6-172b-4d90-8464-db0915e18348)
 
 So again, don't hesitate to change file extensions from the **[Ext Type]** list to check, verify and display accordingly a file.
 
@@ -210,7 +210,7 @@ When loading a file with unknown or missing extensions in the Tool (single image
     * _TXT_ shall not have ATASCII control chars, except $9B End-Of-Line (RETURN) 
 6.	If not, then finally force extension to _DAT_ to display the hexdump of the file, like for the file "QWERT" below:
 
-![image](https://github.com/user-attachments/assets/8280e6ef-c9f4-4422-b449-7454079c8c44)
+![image](https://github.com/user-attachments/assets/17316a46-3734-402b-afbb-40394e94de5f)
 
 In this case, the Tool will display the following information:
 * "_INFO: File extension modified to 'DAT' to display the closest file type_"
@@ -224,17 +224,17 @@ The Tool handles the MyDos subdirectories and MyDOS compatible DOS subdirectorie
 
 They will be displayed like this:
 
-![image](https://github.com/user-attachments/assets/f12a74f6-35f4-4c5f-b1e6-d0740a6e27f3)
+![image](https://github.com/user-attachments/assets/95151bae-7366-4e13-820b-7af969822732)
 
 The Tool result is close to the original, as in this example, the DOS sub-directories are diplayed like this on a real Atari system:
 
-![image](https://github.com/user-attachments/assets/538dfecf-b87c-42bb-97b8-fb1b76b20a21)
+![image](https://github.com/user-attachments/assets/550f3463-b098-4d3e-917e-1f28c7a7e180)
 
 #### SpartaDOS Sub-Directories
 
 The Tool handles the Sparta DOS main and sub directories which are diplayed like this:
 
-![image](https://github.com/user-attachments/assets/cb207561-1d2c-48d0-a562-306754faaaa7)
+![image](https://github.com/user-attachments/assets/95256037-6eb5-4704-8794-5fd1b9aeef68)
 
 ## 3. The letter  commands
 
