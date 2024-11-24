@@ -8,7 +8,7 @@ If a file is loaded in the tool with an extension a type is not listed, the Tool
 
 If it not succeed, then the default extension DAT is set to the file in order to display it as Hexdump.
 
-![image](https://github.com/user-attachments/assets/a252b03d-9d5c-4dad-9977-b335023afd5b)
+![389260551-a252b03d-9d5c-4dad-9977-b335023afd5b](https://github.com/user-attachments/assets/6950fd2d-3781-4ab1-aa21-49eee4bd9bff)
 
 ## DAT extension files
 
@@ -128,16 +128,16 @@ The guess is base on the size of the file that must be an exact multiple of §10
 
 Here is an example of an OS ROM dump that should have been named with OBJ instead or ROM extension because MyDOS has put a $FFFF executable header in the file and segment addresslocation in memory:
 
-![image](https://github.com/user-attachments/assets/83a468ad-4c43-405a-a20e-991b8636f1fc)
+![image](https://github.com/user-attachments/assets/571c035d-cf78-4c14-b6bc-8281da36ab41)
 
 So change it into OBJ file and it works:
 
-![image](https://github.com/user-attachments/assets/a27117d9-b37c-48b2-803a-ac9e42ae482a)
+![image](https://github.com/user-attachments/assets/660a0b20-4b71-46be-827e-5a2b87129d0c)
 
 Here is an example of a ROM dump without the header nor segment. Its size is $4000 multiple of $1000 (4kB).
 The Tool calulates a start address at $8000:
 
-![image](https://github.com/user-attachments/assets/07880196-d98e-4692-ae94-12d468a549ee)
+![image](https://github.com/user-attachments/assets/ca0ea763-fb33-4ec1-b959-03dbafc32244)
 
 ## Comparing text options for viewing and saving text files
 
