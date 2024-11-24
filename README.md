@@ -1,12 +1,12 @@
-# Atari 8-bit Rom Image File Explorer (ARIFE) introduction
+# Atari 8-bit Rom Image File Explorer (ARIFE Tool) introduction
 
-***Atari 8-bit Rom Image File Explorer*** is based upon *ATR Image Explorer* github project from Rossumur (and peterbarrett1967 ?), see: atr_image_explorer.htm at https://github.com/rossumur/esp_8_bit
+***Atari 8-bit Rom Image File Explorer*** Tool is based upon *ATR Image Explorer* github project from Rossumur (and peterbarrett1967 ?), see: atr_image_explorer.htm at https://github.com/rossumur/esp_8_bit
 
-***Atari 8-bit Rom Image File Explorer*** is there : https://pvbestinfoo.github.io/atari8-bit_rom_image_file_explorer.html
+***Atari 8-bit Rom Image File Explorer*** Tool is there : https://pvbestinfoo.github.io/atari8-bit_rom_image_file_explorer.html
 
 The original github.io webpage link for *ATR Image Explorer* is: https://rossumur.github.io/esp_8_bit/atr_image_explorer.htm
 
-The purpose of the modifications and upgrades that I propose in ARIFE are:
+The purpose of the modifications and upgrades that I propose in ARIFE Tool are:
 - fix the bugs,
 - improvement implemented functions,
 - add new features,
@@ -19,11 +19,11 @@ Thanks to Rossumur, peterbarrett1967 and all previous contributors!
 
 # Atari 8-bits and 5200 ROM cartridge management: a great improvement! 
 
-ARIFE considers the following ROM image file extensions: _'.a52'_, _'.rom'_, _'.bin'_ and _'.car'_.
+ARIFE Tool considers the following ROM image file extensions: _'.a52'_, _'.rom'_, _'.bin'_ and _'.car'_.
 
 ## ROM cartridge management feature
 
-ARIFE features a great improvement, the ***ROM image file management***, including the Atari 5200 ROM support, and the ROM type selection as per the A800 emulator list standard (see https://github.com/atari800/atari800/blob/master/DOC/cart.txt), but only for the 75 first types that are more often.
+ARIFE Tool features a great improvement, the ***ROM image file management***, including the Atari 5200 ROM support, and the ROM type selection as per the A800 emulator list standard (see https://github.com/atari800/atari800/blob/master/DOC/cart.txt), but only for the 75 first types that are more often.
 
 For instance, if you load a ROM image file like _'Bounty...rom'_, the system does not really know what this 40KB ROM is about in terms of stucture, load address, layout of memory banks...
 So, the drop-down list selection menu lets you select the possible ROM type from the list, where only 40KB size ROM type entries are filtered and can be selected.
@@ -36,7 +36,7 @@ So the obvious choice will be to select the Type_07 for an Atari 5200 ROM, or Ty
 
 To see how to check that Type_18 is the right one, see [Modifying and save a CART cartridge type ROM image file](https://github.com/pvbestinfoo/Atari-8-bit-Rom-File-Explorer/edit/main/README.md#modify-and-save-a-cart-cartridge-type-rom-image-file).
 
-Then, ARIFE will display all the following ROM image information on screen:
+Then, ARIFE Tool will display all the following ROM image information on screen:
 - Size and number of banks, and corresponding memory addresses
 - ROM cartridge vectors and flag
 - ROM cartridge name and copyright date for an Atari 5200 ROM (if it exists)
@@ -46,7 +46,7 @@ So try it !
 
 ## Modify and save a CART cartridge type ROM image file
 
-As an useful feature, ARIFE allows you to modify ROM image file (_'.a52'_, _'.rom'_, _'.bin'_ extensions) into a known-type "CART ROM file" which extension is _'.car'_.
+As an useful feature, ARIFE Tool allows you to modify ROM image file (_'.a52'_, _'.rom'_, _'.bin'_ extensions) into a known-type "CART ROM file" which extension is _'.car'_.
 
 "CART ROM files" are automatically identified and properly loaded in A800 or Altirra emulators, and in retroarch emulationstation (recalbox, retrobat...)
 
@@ -54,7 +54,7 @@ As an example : if a cartridge type is unknown, the emulationstation will not la
 
 ![image](https://user-images.githubusercontent.com/123185835/229629896-c3a63b09-7014-4c32-937d-a0c40854228c.png)
 
-In order to avoid this, thanks to ARIFE, you can set and save the relevant cartridge type, and then get an automatic loading of the ROM image in emulators.
+In order to avoid this, thanks to ARIFE Tool, you can set and save the relevant cartridge type, and then get an automatic loading of the ROM image in emulators.
 
 This is how to proceed:
 
@@ -93,13 +93,13 @@ It runs fine!
 
 ## The OS ROM support
 
-An additionnal ARIFE feature is to support the OS ROM type and display it. This is possible by keeping the default Type_00, and ROM data are set to a bank in the OS ROM address area, accordingly to its size, as follows:
+An additionnal ARIFE Tool feature is to support the OS ROM type and display it. This is possible by keeping the default Type_00, and ROM data are set to a bank in the OS ROM address area, accordingly to its size, as follows:
 - 2KB ROM file will be set as an Atari 5200 OS ROM, loaded into $F800
 - 8KB ROM file will be set as an ATARI BASIC ROM, loaded into $A000
 - 10KB ROM file will be set as an ATARI OS A/B ROM, loaded into $D800
 - 16KB ROM file will be set as an ATARI OS XL/XE ROM, loaded from $C000
 
-For instance, when loading _'ATA..XL.ROM'_ image file, ARIFE will show its hexdump from $C000 address and then you can to disassemble it:
+For instance, when loading _'ATA..XL.ROM'_ image file, ARIFE Tool will show its hexdump from $C000 address and then you can to disassemble it:
 
 ![image](https://github.com/user-attachments/assets/b11d78fe-533d-40b1-86ba-54ffab6139b4)
 
@@ -128,7 +128,7 @@ Of course, the disassembly routine improvement applies to the ROM image: just cl
 
 ## Menu for Display & Disassembly options
 
-ARIFE now features a Display & Disassembly option menu:
+ARIFE Tool now features a Display & Disassembly option menu:
 
 ![image](https://github.com/user-attachments/assets/0d7ac773-1f7c-4c44-a054-fe56e3e48577)
 
@@ -137,11 +137,11 @@ The Display & Disassembly options are:
 - *Show destination address in hyper links*: a great improvement to follow the JMP, JSR and relative jumps in the 6502 code disassembly listing, just try and easily navigate in the program listing!
 - *Accept to disassemble up to 2 BRK instructions*: means that BRK instructions are accepted and will be considered as valid code in the disassembly listing (otherwise a BRK instruction breaks the disassembly listing and is shown in a data bloc).
 - *Show address with Rom bank number as BK00..FF*: useful for ROM disassembly with multiple banks at same addresses. The ROM bank number will be added in front of the disassembly address.
-- *Show program code flags (info for dev)*: useful for ARIFE development about the 6502 Atari code disassembly routine verification, see below and the Javascript code of ARIFE for more information.
+- *Show program code flags (info for dev)*: useful for ARIFE Tool development about the 6502 Atari code disassembly routine verification, see below and the Javascript code of ARIFE Tool for more information.
 
 ## Disassembly with A5200 equates
 
-ARIFE disassembly routine features the Atari 5200 equates addresses, instead of Atari 800/XL/XE ones, whenever an Atari 5200 file is loaded.
+ARIFE Tool disassembly routine features the Atari 5200 equates addresses, instead of Atari 800/XL/XE ones, whenever an Atari 5200 file is loaded.
 Atari 5200 equate reference are taken from:
 - Altirra Source Code
 - AtariAge forum https://forums.atariage.com/topic/90339-atari-5200-equates-anyone/
@@ -162,7 +162,7 @@ Following is an example of the Atari 5200 OS ROM disassembly with Atari 5200 equ
 
 The disassembly routine has been improved, notably as follows:
 - Make the difference on memory equate name when Writing or Reading OS chip address
-- Manage the disassembly stop at the end of memory or at the end address: ARIFE will display _"!End of data or max address reached!"_
+- Manage the disassembly stop at the end of memory or at the end address: ARIFE Tool will display _"!End of data or max address reached!"_
 - Validation of the disassembly blocs with a recursive function
 - Accept relative jump instruction only on certain conditions (like BNE+BEQ, CLC+BCC, LDA#$00+BEQ)
 - Cancel (invalidate) jump on a target address that points to an invalid instruction
@@ -173,11 +173,11 @@ You can check how the disassembly routine runs by displaying the program code fl
 If the code does not set the 0x80 flag with an Entry Point, a JUMP, a JSR or a relative jump instructions, then this entry address is ignore.
 As a consequence a bloc of disassembly should always start with an entry address.
 
-Let's visualy compare previous and actual ARIFE display on same file:
+Let's visualy compare previous and actual ARIFE Tool display on same file:
 
 ![image](https://github.com/user-attachments/assets/92ab9538-5234-4132-b23e-0014e0f9e50f)
 
-You can check the improved details by compairing the ARIFE result with previous version of ATR Image Explorer on your favorite file disassembly listing.
+You can check the improved details by compairing the ARIFE Tool result with previous version of ATR Image Explorer on your favorite file disassembly listing.
 
 ## Extract menu: Disassembly of extracted data
 
@@ -188,12 +188,12 @@ In the next example, let's open a boot disk program. The disassembly listing is 
 ![image](https://github.com/user-attachments/assets/fa18b7c0-3cd0-4bcb-a3ff-8dcddb43f5f7)
 ![image](https://github.com/user-attachments/assets/85c47e5d-d11e-49b2-9bbe-fca0ce3c0063)
 
-From the above example, the disassembly of the remaining code in sectors #3 and above is accessible thanks to the **ARIFE Extract feature**.
+From the above example, the disassembly of the remaining code in sectors #3 and above is accessible thanks to the **ARIFE Tool Extract feature**.
 Click on the ***\<\<E>>*** on the left floater menu:
 
 ![image](https://github.com/user-attachments/assets/2ba6542b-cabf-4da4-aa93-30baa7362cb4)
 
-Then ARIFE displays:
+Then ARIFE Tool displays:
 - the full sector hexdump in the _'show'_ windows, with \[sector:offset] index
 - _Extract data from disk and disassemble Menu_: this menu allows to select the sector start, stop, and starting address for the disassembly
 - _ReShow full HexDump_: this button reset the disassembly and display the full sector hexdump.
@@ -215,15 +215,15 @@ This makes possible to save image disk converted into ATR disk image file, for t
 
 Furthermore the file type drop-down menu can be used to force changing file type (this feature is a work in progress).
 
-In case of an ATR file or XFD file loaded in ARIFE that would be smaller than a real Atari disk in size, then it will be converted into a full size ATR disk image in memory.
+In case of an ATR file or XFD file loaded in ARIFE Tool that would be smaller than a real Atari disk in size, then it will be converted into a full size ATR disk image in memory.
 
 # The listing saving features
 
-ARIFE now features several possibilities to save the listing for your own purpose, by clicking the corresponding button.
+ARIFE Tool now features several possibilities to save the listing for your own purpose, by clicking the corresponding button.
 
 ![image](https://github.com/user-attachments/assets/49a9816b-bebb-433b-a51b-2d3520993b1c)
 
-The display window is the HTML element \<pre id="show"\>, at the bottom right in the ARIFE page - let's call it the _'show'_ window. This is the window that can be saved.
+The display window is the HTML element \<pre id="show"\>, at the bottom right in the ARIFE Tool page - let's call it the _'show'_ window. This is the window that can be saved.
 
 ![image](https://github.com/user-attachments/assets/159a1cec-2877-4175-ab06-c3068cf0d9ff)
 
@@ -240,39 +240,39 @@ But the best webpages are the Atariki.krap.pl from http://atariki.krap.pl/index.
 
 Translated by google from polish, they give a lot of detailled information regarding DOS TOC, directories, file format... Thank you people for your work!
 
-Thanks to these information, ARIFE now supports DOS1 and DOS3.
+Thanks to these information, ARIFE Tool now supports DOS1 and DOS3.
 
 ## Disk, BOOT information and DOS directory
 
-ARIFE now display more accurate caracteristics of the disk, the boot information according to DOS, and a DOS directory in the _'show'_ window.
+ARIFE Tool now display more accurate caracteristics of the disk, the boot information according to DOS, and a DOS directory in the _'show'_ window.
 
 ![image](https://github.com/user-attachments/assets/2766bcc7-1d40-45bf-a49b-c05949c6ee3b)
 
-As shown on previous screenshots, ARIFE displays on top of the _'show'_ window:
+As shown on previous screenshots, ARIFE Tool displays on top of the _'show'_ window:
 - the disk information of the Image disk, like "Image has 1040 ($410) sectors of 128 bytes - 1050 Enhanced Density (Medium Density)"
 - the identified DOS type with the size of corresponding bloc in sector count, like "DOS2.5 disk has been identified, 1 bloc is 1 sector"
 - the free blocs and the total blocs on disk, like "DOS disk has 0 ($0) free blocs, among a total of 1010 ($3F2) blocs".
 
-The directory that is displayed on the left in white on blue is the official valid directory handled by ARIFE.
+The directory that is displayed on the left in white on blue is the official valid directory handled by ARIFE Tool.
 The directory displayed in the _'show'_ window is a more detailed one. For example:
 
 ![image](https://github.com/user-attachments/assets/eea8bd61-3886-4b44-b3f1-f178d7eca361)
 
 The empty and non-compliant files in directory entries are listed and commented, they are not displayed in the blue valid directory.
-As you can see in ARIFE, the $03 & $43 file flags are correctly supported for DOS2.5 disk with 1040 sectors. For example:
+As you can see in ARIFE Tool, the $03 & $43 file flags are correctly supported for DOS2.5 disk with 1040 sectors. For example:
 
 ![image](https://github.com/user-attachments/assets/aad1d504-6f65-41f6-9aea-303f7c0b5e01)
 
 
 ## DOS1 support
 
-Current version of ARIFE handles flawlessly the DOS1 disk system:
+Current version of ARIFE Tool handles flawlessly the DOS1 disk system:
 
 ![image](https://github.com/user-attachments/assets/99e33e86-6037-4e46-921a-41c401081794)
 
 ## DOS3 support
 
-Current version of ARIFE handles flawlessly the DOS3 disk system:
+Current version of ARIFE Tool handles flawlessly the DOS3 disk system:
 
 ![image](https://github.com/user-attachments/assets/1b0f8811-27e6-4f11-b357-12ed1e7ef7fc)
 
@@ -308,7 +308,7 @@ A last buggy segment usualy occurs when the last byte of the last sector, corres
 
 # TO DO
 
-What can we do for next update of ARIFE:
+What can we do for next update of ARIFE Tool:
 - improve the Extract fonction
 - check and correct behaviour on changing file type from the drop-down menu selection
 - support DOS XE by creating a class like SPARTA
@@ -318,7 +318,7 @@ What can we do for next update of ARIFE:
 - For ROM, add the ROM bank number in front of banks hexdump.
 - OS ROM vectors to display as Entry Points
 
-You can check ARIFE Javascript inline code and comments for other ideas, and come back to me!
+You can check ARIFE Tool Javascript inline code and comments for other ideas, and come back to me!
 
 Enjoy!
 
