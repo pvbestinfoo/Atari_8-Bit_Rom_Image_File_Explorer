@@ -238,7 +238,7 @@ The Tool handles the Sparta DOS main and sub directories which are diplayed like
 
 ## 3. The letter  commands
 
-![image](https://github.com/user-attachments/assets/c3935931-7c48-4274-ae01-b257e21b0f8b)
+![image](https://github.com/user-attachments/assets/8b60347c-49c7-4007-abe0-b5dd6910ce58)
 
 These commands are in the left floater and consist of:
 1. the _"Heart"_ char command. When clicked it toggles the virtual Atari ATASCII keyboard with all the 256 chars. When a char is clicked from this keyboard, and an Editor window is open in the Tool, then the char is automatically inserted in the Tool's Editor window.
@@ -259,13 +259,13 @@ The command letter is greyed (that is inactive) if the command is not relevant a
 From left to right is the $.0 to $.F byte low nibble, from up to down is the $0. to $F. byte high nibble.
 See also the [Atari ATASCII wikipedia](https://en.wikipedia.org/wiki/ATASCII) web page. 
 
-![image](https://github.com/user-attachments/assets/8da30f58-68c0-4695-bd11-99f4a30ed8f3)
+![image](https://github.com/user-attachments/assets/e95d8b33-0e1b-4697-9c22-598211389a20)
 
 [2] For example, you need an horizontal bar to make a text border in your code, so put your carret at the position,
 
 [3] and then click on the graphic char $12 for inserting the horizontal bar char in the Editor.
 
-![image](https://github.com/user-attachments/assets/9f816c80-7da6-4d01-9375-55b1a572e824)
+![image](https://github.com/user-attachments/assets/2d0a4113-2b46-4da2-b897-d7d405be49c0)
 
 This Tool is very usefull when you need to insert Atari graphics chars or control chars in your code without the real Atari keyboard!
 
@@ -286,13 +286,13 @@ Hexdump display is canceled when:
 
 Example of Hexdump display:
 
-![image](https://github.com/user-attachments/assets/a9ea772b-b533-460d-8579-6da1eebaf8da)
+![image](https://github.com/user-attachments/assets/c427f62c-3b27-4f8a-8db1-1f9671160d17)
 
 ### 3.4. "I" command to Inverse a char in the Editor
 
 Click the "I" command on selected chars in the Editor to replace the chars by their inverse chars. This Tool is usefull as the Client keyboard cannot put an inverse char in the Editor.
 
-![image](https://github.com/user-attachments/assets/8cbdd8fd-8092-4f55-a0cc-909f60005cc9)
+![image](https://github.com/user-attachments/assets/52b2ee6d-8c9a-4f78-87ab-fda85a359dd7)
 
 [1] For example, you need to inverse some text in your code, so put your carret at the position and select one or more chars,
 
@@ -312,7 +312,7 @@ Then Click on "D", it displays a floater window with the corresponding disassemb
 
 Example with disassembly of code at Basic line 120 X$="..."
 
-![image](https://github.com/user-attachments/assets/0cfff288-fe08-4569-afe3-7c710ce1c9e6)
+![image](https://github.com/user-attachments/assets/36a98c3b-acea-4608-9bda-5de80cdefa63)
 
 _TODO: check with Basic if it is required to consider the End-Of-Line $9B in the X$=" " string_
 
@@ -323,7 +323,7 @@ The "P" command allows you to hide and toogle the options menu for:
 * _"Listing display font options"_
 * Save listind buttons
 
-![image](https://github.com/user-attachments/assets/1010fd97-4118-46c4-8d64-abcf5169755c)
+![image](https://github.com/user-attachments/assets/b122a212-566e-4e9c-9d3d-391b0a647b3a)
 
 The goal is to gain display size.
 
