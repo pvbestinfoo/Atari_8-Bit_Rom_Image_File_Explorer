@@ -92,7 +92,7 @@ See [chapter 2.2](#22-display-of-executable-atari-dos-files) below for details o
 
 ### 1.6. ROM Image files
 
-ROM Images files are usually binary image of Atari ROM cartdridges, and have the **BIN, ROM, A52, CAR** file extensions. They are displayed like this:
+ROM Image files are usually binary image of Atari ROM cartdridges, and have the **BIN, ROM, A52, CAR** file extensions. They are displayed like this:
 
 ![image](https://github.com/user-attachments/assets/3cb28eb3-522d-449e-951f-27c153456f91)
 
@@ -111,7 +111,7 @@ If no type is found in the ROM image file, then the possible types are validated
 
 ### 1.7. DSK Image files
 
-DSK Images files have the **DSK** file extensions. They are displayed like this:
+DSK Image files have the **DSK** file extensions. They are displayed like this:
 
 ![image](https://github.com/user-attachments/assets/92e78a55-4d31-411a-a495-c2fc96d4b310)
 
@@ -121,7 +121,7 @@ You can click on **[Download ATR file]** button to convert it into ATR or **[Dow
 
 ### 1.8. ARC Image files
 
-ARC Images files have the **ARC** file extensions. They are displayed like this:
+ARC Image files have the **ARC** file extensions. They are displayed like this:
 
 ![image](https://github.com/user-attachments/assets/6e2af404-d6d8-42f3-8c9d-b02616c5cf5a)
 
@@ -129,7 +129,7 @@ An ARC file is like a ZIP file, it is an ARChive containning compressed files. C
 
 ### 1.9. DAT Image files
 
-DAT Images files have the **DAT** file extensions. They are displayed like this:
+DAT Image files have the **DAT** file extensions. They are displayed like this:
 
 ![image](https://github.com/user-attachments/assets/97005c25-12c0-4a99-a744-59272f8ad76a)
 
@@ -138,6 +138,25 @@ A DAT file is considered as a data file. So only its Hexdump is displayed.
 In an Atari Disk Image (image of an Atari floppy disk), the Atari DOS files may have every kind of extensions.
 
 When a file type is unknown (that is not in the extension list of the previous **1.2 to 1.5 chapters** above), it is considered as *DAT* by the Tool in order to be displayed. Thus **DAT** is the *default* file type.
+
+### 1.10. DCM Image files
+
+DCM disk image files have the **DCM** file extensions. They are open by the Tool, decompressed and then displayed as an ATR disk image file like this:
+
+![image](https://github.com/user-attachments/assets/0c13a5e6-79fd-4abc-9ab7-94b4655a9ef7)
+
+### 1.11. KBOOT Image files
+
+KBOOT disk image files usually have the ATR extension, and they have the name of the Atari Executable file that is on the disk.
+
+A KBOOT disk image is opened by the Tool as a generic DOS file that have only one file, that is Atari Executable file itself, named KBOOFILE.XEX by default.
+
+![image](https://github.com/user-attachments/assets/c2a25906-57bb-4057-b3b3-4ebe9d8820f9)
+
+You can display this KBOOFILE.XEX by selecting it and save it as an Atari Executable file by clicking on the [Download original Atari file] button.
+
+![image](https://github.com/user-attachments/assets/d515bd7f-bd08-46e4-8dc8-9464decbd68e)
+
 
 ## 2. Display features
 
@@ -235,6 +254,20 @@ The Tool result is close to the original, as in this example, the DOS sub-direct
 The Tool handles the Sparta DOS main and sub directories which are diplayed like this:
 
 ![image](https://github.com/user-attachments/assets/95256037-6eb5-4704-8794-5fd1b9aeef68)
+
+### 2.5. DOS 4
+
+The Tool handles the DOS 4, and its associated disk format: SD, DD, ED and DSDD. This is the exemple for a DSDD disk:
+
+![image](https://github.com/user-attachments/assets/6ba9dcf7-1365-4e06-acab-9a520861e722)
+
+
+### 2.6. DOS XE
+
+The Tool handles the DOS XE and its subdirectories.
+
+![image](https://github.com/user-attachments/assets/38036230-8a84-405d-acb3-c101f4e5c566)
+
 
 ## 3. The letter  commands
 
@@ -377,6 +410,20 @@ Example of a font that is retrieved into the PROTECTO.COM executable file at off
 Example of graphic GR7 pictures found into the SPACON.FLI executable file at offset $8AE
 
 ![image](https://github.com/user-attachments/assets/20fd3072-d607-42e0-bc5b-4c4443d81862)
+
+### 3.9. "M" command for the Modify Menu that launches the Atari Hex Editor
+
+When a file is open in the tool, you can open the Atari Hex Editor to modify it.
+
+![image](https://github.com/user-attachments/assets/1ed34759-5027-4db8-aa37-0d3e0dbf8f33)
+
+Click on a block or a sector to activate its modification. The blue area is the editor.
+
+![image](https://github.com/user-attachments/assets/07d0d945-05c4-42eb-935f-d79caad6af6c)
+
+In the Editor, you may cancel the changes, and if you save the changes, it will open the modified file as a new file in the tool:
+
+![image](https://github.com/user-attachments/assets/c70ec9dc-4435-4e40-a8d0-1fa9db69620c)
 
 ## 4. Tool Limitations and other information
 
