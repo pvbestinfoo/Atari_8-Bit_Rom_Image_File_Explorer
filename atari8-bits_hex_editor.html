@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="en">
+<head>
+<style>
+  * {
+    margin:0;
+    padding:0;
+    vertical-align:top;
+    /*font:1em/1em courier*/
+  }
+  body {
+    background-color: #f0f0f0;
+    font-family: 'Noto Sans Mono', monospace;
+    font-size: 12px;
+    line-height: 12px;
+  }
+  td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  table, td {
+    border-collapse: collapse;
+    border: 1px solid #88c;
+    padding: 1px 2px;
+  }
+  #edit_table table, #edit_table td {
+    border: 1px solid blue;
+  }
+  #hta {
+    height: 1.5em; /*defaul minimal size*/
+    resize:none;
+    overflow:hidden;
+    background-color: #bbf;
+    /*font:1em/1em courier; for shorter declaration!*/
+    font-family: 'Noto Sans Mono', monospace;
+    font-size: 12px;
+    line-height: 12px;
+  }
+  #w { /*trick for not display the standard text and "select a file" button for the input type="file"*/
+    position:absolute;
+    opacity:.001;
+  }
+  button, label {
+    font-family: 'Noto Sans Mono', monospace;
+    background-color: #ccf;
+    border: 0px;
+    height: 12px;
+    font-weight: bold;
+    font-size: 12px;
+  }
+</style>
+<script>
+  /* ATARI 8-bits HEX EDITOR by PVBest Infoo, April 2025             /
+  /  based upon the great code of https://github.com/xem/hex         /
+  /  works within a frame of atari8-bit_rom_image_file_explorer.html*/
+  var _tmpbuffsize = 0; //temporay size of the temp byte buffer
+  var _tmpbytebuff = []; //_tmpbytebuff is the temp byte buffer
+
+  var _l; //the offset display box on the left
+  var _hta; //the hex text area display (textarea)
+  var _r; //the ascii char display box on the right
+  var _t; //the hex display title box 00 ... 0F
+
+  var _i1;
+  //var _i2;
+
+  var _h; //temp string
+  var _bs; //temp caret position (start)
+  var _be; //if selection, postion on end selection
+  var _br; //number of replaced char
+
+  var _c = false; // if true, a dummy "0" has been added to complete a byte of 2 hex digit 
+  var _za = false;
+
+  var _txtbuff = ""; //tmp text buffer from textarea
+  var _txtbuff_old = [];
+
+  var _bytebuff = []; //the file byte buffer to work on
+  var _obbl = 0; //original _bytebuff length
+  var _bytebuff_old = [];
+
+  var _editedBlockNr = 0; //first block or sector, displayed Sector number will _editedBlockNr+1 (_editedBlockNr always starts at 0)
+  var _editedBuff = []; //the textarea byte buffer
+  var _bShowEdit = false; //no edition of a sector or block when launching the program
+  var _winh = 0;
+  //Global Variable to be set =============================================================
+  var _blockSize = 256; //defaut block or sector size
+  var _isSectorBlock = true; //true for "sector"; block if false
+  //RADIO and CHECK BUTTON ================================================================
+  var _bReplace = true; //defaut is REPLACE mode (and not INSERT mode)
+  var _bInslimit = true; //defaul is to limit the memory size in case of Insertion
+  //RADIO and CHECK BUTTON ================================================================
+  var _switchAscii = false; //default is ATARI ASCII, true if we switch from ATARI ASCII to ATARI INTERNAL CHAR
+  var _ll; //length of the hex displayed text (insert/delete)
+  var _lf; //length of original hex displayed text (replace)
+  //=======================================================================================
+  var _gid = function (idname) {
+    return document.getElementById(idname);
+  }
+
+  function bodyOnLoad_Init() { //initialization of the program, initialization of _bytebuff on a default _tmpbytebuff;
+    
+    window.addEventListener("message", function(event){
+      //alert("j'ai bien reçu: " + event.data);
+      inputOnChange_LoadBuff(event.data);
+      console.log(">HEXED>bodyOnLoad_Init() => Data well received into the editor...");
+    });
+    
+    //get element of the display window and put it in the global var
+    _l = _gid("disp_line");
+    _hta = _gid("hta");
+    _r = _gid("disp_char");
+    _i1 = _gid("i1");
+    
+    //initialization of _bs caret position when keyboard is pressed
+    _hta.addEventListener('keyup', e => { //action when a key is released in text area
+      _bs = e.target.selectionStart;
+      _be = e.target.selectionEnd;
+      if (_c) {
+        if (_bs == _be && _bs == _ll ) {//nothing selected && _bs (or _be) is too far (if selection then it is handled by OnSelect)
+          _bs--;
+          e.target.setSelectionRange(_bs,_bs);
+        }
+      }
+      _br = _be - _bs;
+      _i1.innerText = "[" + _bs + "-" + _be + "](" + _br + ")"; //display caret position info
+    });
+
+    _hta.addEventListener('dragstart', e => { // action when a selection is dragged
+      e.preventDefault(); //do nothing!! (otherwise it would be a mess to handle)
+    });
+
+    //display byte listing but wihtout the textarea edition 
+    //displayMemoryInTable(false);
+  }
+
+  function setTextareaText() { //transform the _editedBuff bytes into the _txtbuff string
+    for (var i = 0; i < _editedBuff.length; i++) {
+      _txtbuff += (0 + _editedBuff[i].toString(16).toUpperCase()).slice(-2); //without space
+    }
+  }
+
+  function getBytesFromTextarea() { //read _txtbuff and convert its bytes in _editedBuff  
+    var j = 0;
+    var b = [];
+    for (var i = 0; i < _txtbuff.length; i += 3) {
+      // Convert them in numbers
+      var c = parseInt(_txtbuff.substr(i,2),16);
+      //store in buffer //update buffer by reading entered hexa char
+      b[j++] = c & 0xFF;
+    }
+    _editedBuff = b;
+  }
+  
+  function readBlockMem(blk) { //read the block number "blk" of memory _bytebuff and put it in _editedBuff of accordingly blocksize
+    var ds = cStartOffset(blk); //offset in memory for the "blk" number; (blk always starts at 0, for sector or memory block)
+    var dl = cBlockSize(blk); //length of byte to read is the block size
+    for (var i = 0; i < dl; i++) {
+      if (ds + i >= _bytebuff.length) break; // if no more bytes in _bytebuff exit
+      _editedBuff[i] = _bytebuff[ds + i];
+    }
+  }
+
+  function pushModifToMem(blk) {  //update the global _bytebuff memory bytes with the new _editedBuff 
+    var ds = cStartOffset(blk); //start of displayed block in textarea
+    var de = ds + _editedBuff.length;
+    var da = _bytebuff.slice(0, ds);
+    var pde = cStartOffset(blk + 1); //end of displayed block in textarea (first of the next one)
+    if (pde >= _bytebuff.length) { //we edit the last block in mem, nothing after
+      da = da.concat(_editedBuff);
+    }
+    else { //we have to modify mem data byte after _editedbuff
+      da = da.concat(_editedBuff);
+      da = da.concat(_bytebuff.slice(pde, _bytebuff.length));
+    }
+    _bytebuff = da; //update _bytebuff
+    return de; //return offset of last edited byte + 1
+  }
+  
+  function returnAtariChar(b) { //get a byte and return the corresponding dsiplayable char (or '.'if not displayable)
+    b &= 0x7F; //same inverted char
+    if (_switchAscii) {
+      if (b <= 0x3F) b += 0x20;
+      else if (b >= 0x40 && b <= 0x5F) b -= 0x40;
+    }
+    return (0x21 <= b && 0x7E > b) ? String.fromCharCode(b) : ".";
+  }
+
+  function cBlockSize(blk) { //compute and return the size of block "blk"
+    if (_isSectorBlock && blk < 3) return 128; //blk is sector block number starting from 0
+    return _blockSize;
+  }
+  
+  function cStartOffset(blk) { //compute and return start memory offset of block "blk"
+    if (_isSectorBlock) { //it's disk sectors, blk is sector block number starting from 0
+      if (blk < 3)
+        return (blk * 128); 
+      else
+        return (3 * 128 + (blk - 3) * _blockSize);
+    }
+    else
+      return (blk * _blockSize); //blk is memory block number starting from 0
+  }
+
+  function displayMemoryInTable() { // initialize and display the hexdumps from the _bytebuff and hide/show the edit textarea
+    // display the edit textarea if _bShowEdit is true (and textarea content must be initialized before!)
+
+    function displayBlocks(startBuff, endBuff) {
+      //note global variable is "ncnt" for the counter of sector (from 1) or block of memory (from 0)
+      var s1 ="";
+      var s2 ="";
+      var s3 ="";
+      var sp = _isSectorBlock ? (ncnt - 1) : ncnt ; //s is used to point into memory so start from 0
+      //console.log("START Sector #" + ncnt + " that is block " + sp);
+      var bcnt = 1; //count byte in a sector or block, for the display arrangement, forced to 1 for the first display
+      var sl = 0; //count of pointer offset for sector display
+
+      for (var i = startBuff; i < endBuff; i++) {
+        var c = _bytebuff[i];
+        if (bcnt == 1) { //new sector or block to display
+          s1 += `<button title="Click to edit ${sb} ${ncnt}" onclick="button_Block(${ncnt})">${sb} #${ncnt.toString(16).toLocaleUpperCase()} (${ncnt})</button> <br />`;
+          s3 += "\n";
+          s2 += "\n";
+          //console.log("sector : " + ncnt);
+          ncnt++; //next sector or block
+          bcnt = cBlockSize(sp); //initialize the number of byte for the next sector or block
+          //console.log("size of block #" + sp + " that has " + bcnt + " bytes");
+          sp++;
+          sl = 0;
+        }
+        else bcnt--; //still not at the end of block
+
+        //display the byte pointer offset in the first column at begining of line (every 16 bytes)
+        if ((i % 16) == 0) {
+          if (_isSectorBlock) s1 += (sl++).toString(16).toUpperCase() + "0&gt<br />"; //if sector: use 
+          else s1 += i.toString(16).toUpperCase() + "&gt<br />"; //if not sector, keep the full memory pointer
+        }
+        //byte display and ASCII Char display every byte
+        s2 += (0 + c.toString(16).toUpperCase()).slice(-2) + " ";
+        s3 += returnAtariChar(c);
+        //display a line feed in byte display and ASCII Char at the end of each line (every 15 bytes)
+        if ((i % 16) == 15) {
+          s2 += "\n";
+          s3 += "\n";
+        }
+      }
+      return [s1, s2, s3];
+    }
+
+    // QUICK DISPLAY LISTING
+    var ncnt = 0;
+    var sb = "BLOCK";
+    if (_isSectorBlock) {
+      sb = "SECTOR";
+      ncnt = 1;
+    }
+    var ds = 0;
+    var de = _bytebuff.length;
+    var ts = ["","",""];
+
+    if (_bShowEdit) {
+      var ds = cStartOffset(_editedBlockNr);
+      if (ds) { //ds is not zero, so edition is after first block, so we display all previous block
+        ts = displayBlocks(0, ds);
+        _gid("first_table").style="display: block";
+      }
+      else _gid("first_table").style="display: none";
+    }
+    else
+      _gid("first_table").style="display: none";
+
+    //set text for first table
+    _gid("ic11").innerHTML = ts[0];
+    _gid("ic12").innerText = ts[1];
+    _gid("ic13").innerText = ts[2];
+    //in any case, display block after edited block
+    ts = displayBlocks(ds, de);
+    _gid("ic31").innerHTML = ts[0];
+    _gid("ic32").innerText = ts[1];
+    _gid("ic33").innerText = ts[2];
+
+    // *** END OF QUICK DISPLAY LISTING
+
+    _gid("fl1").innerText = _obbl + " ($" + _obbl.toString(16).toUpperCase() + ")";
+    _gid("fl2").innerText = de + " ($" + de.toString(16).toUpperCase() + ")";
+    //END OF HINT DISPLAY*/
+    ncnt = _editedBlockNr + (_isSectorBlock ? 1 : 0);
+    if (_bShowEdit) {
+      _gid("edit_table").style="display: block";
+      _gid("disp_block").innerText = `Editing the\n ${sb} #${ncnt.toString(16).toUpperCase()} (${ncnt})`;
+    }
+    else {
+      _gid("edit_table").style="display: none";
+    }
+  }
+
+  function radioOnClick_Change(v) { //change mode type boolean _bReplace according to click on INSERT or REPLACE radio button
+    switch (v) {
+      case 1:
+        _bReplace = true; break;
+      case 2:
+        _bReplace = false; _bInslimit = false; break;
+      case 3:
+        _bReplace = false; _bInslimit = true; break;
+    }
+  }
+
+  function switchAscii() {//change Atari ASCII into ATARI DISPLAY char, use updateAscii() and  displayMemoryInTable()
+    if (_switchAscii) {
+      _switchAscii = false;
+      var s = "ASCII CHAR DISPLAY";
+      _gid("swAta1").innerText = s;
+      _gid("swAta2").innerText = s;
+      _gid("swAta3").innerText = s;
+    }
+    else {
+      _switchAscii = true;
+      var s = "ATARI CHAR DISPLAY";
+      _gid("swAta1").innerText = s;
+      _gid("swAta2").innerText = s;
+      _gid("swAta3").innerText = s;
+    }
+    //_hta.oninput();
+    if (_bShowEdit) updateAscii();
+    displayMemoryInTable();
+  }
+
+  function button_Block(nbr) { //display a selected Block or Sector "nbr"; use readBlockMem(), displayMemoryInTable(), setTextareaText() and refreshTextarea()
+    _txtbuff = ""; //reset textarea text
+    _editedBuff = []; //reset textarea hex buffer
+    _editedBlockNr = _isSectorBlock ? (nbr - 1) : nbr; //initialize _editedBlockNr, substract 1 for sector display
+    _bShowEdit = true; // activate the block edition
+    readBlockMem(_editedBlockNr); //copie the memory at block(s) into _editedBuff
+    displayMemoryInTable(); //refresh display hexdumps from _bytebuff and prepare the textarea
+    setTextareaText(); //take the _editedBuff and convert it to text in _txtbuff
+    refreshTextarea(); //initialize the textarea, display _txtbuff into the textarea hta.value
+  }
+
+  function textareaOnClick() { //take the action when click on textarea (caret and selection handling)
+    _bs = hta.selectionStart;
+    _be = hta.selectionEnd;
+    if (_c) {
+        if (_bs == _be && _bs == _ll) {
+          _bs--;
+          _be--;
+        }
+        else if (_be != _bs && _be == _ll)
+          _be--;
+        
+        hta.setSelectionRange(_bs,_be);
+      }
+    _br = _be - _bs
+    _i1.innerText = "[" + _bs + "-" + _be + "](" + _br + ")"; //caret position info
+  }
+ 
+  function textareaOnSelect() { //take the action when a selction is made on textarea (caret and selection handling)
+    _bs = hta.selectionStart;
+    _be = hta.selectionEnd;
+    if (_c) {
+      if (_be != _bs && _be == _ll) { //abviously as there is a selction, _be != _bs
+          _be--;
+          hta.setSelectionRange(_bs,_be);
+      }
+    }
+    _br = _be - _bs
+    _i1.innerText = "[" + _bs + "-" + _be + "](" + _br + ")"; //caret position info
+  }
+
+  function sendEditorHeight() {
+    let win = window.top;
+    let scrollHeight = Math.max(
+      document.body.scrollHeight, document.documentElement.scrollHeight,
+      document.body.offsetHeight, document.documentElement.offsetHeight,
+      document.body.clientHeight, document.documentElement.clientHeight);
+    if (_winh != scrollHeight) { //height has been modified, send new
+      _winh == scrollHeight;
+      let msg = {txt : "Window height", winh : scrollHeight};
+      win.postMessage(msg, "*");
+    }
+  }
+
+  function inputOnChange_LoadBuff(dt) {
+    //send by main //let dt = {eSize: sSize, hdata:_shown.data};
+    for (var i in dt.hdata) {
+      _bytebuff[i] = dt.hdata[i];
+    }
+    if (dt.eSize == 0) {
+      _blockSize = 256; //defaut block size
+      _isSectorBlock = false; //"block" and not sector
+    }
+    else {
+      _blockSize = dt.eSize; //sector size
+      _isSectorBlock = true; //sector and not "block"
+    }
+    if (dt.hdata.length == 0) return button_EraseMem(); //an empty file has been sent, so it's like launching an "erase memory" command
+    _bShowEdit = false;
+    displayMemoryInTable(_bShowEdit);
+    _bytebuff_old = _bytebuff;
+    _obbl = _bytebuff.length;
+    sendEditorHeight();
+  }
+
+  function updateAscii() { //textarea: update ascii listing => use _txtbuff, _h and set directly set the innerText
+    // Reset h, and compute the ascii string for the right box (table cell)
+    //_h = "<pre>"; //the converted ascii text on right
+    _h = "";
+    var j = 1;
+    // Loop on the hex values
+    for (var i = 0; i < _txtbuff.length; i += 3) {
+      // Convert them in numbers
+      var c = parseInt(_txtbuff.substr(i,2),16);
+      // Convert in Atari char
+      _h += returnAtariChar(c);
+
+      if ((j++ % 16) == 0)
+        _h += "\n";
+    }
+    //_h += "</pre>"
+    _r.innerText= _h;
+  }
+
+  function updateOffset() { //textarea: update offset display => use _hta.value.length, _h and set directly set the innerText
+    // Reset h
+    _h = "";
+    // Loop on textarea lines
+    for (var i = 0; i < _hta.value.length/48 ;i++)
+      // Add line number to h
+      _h += (0 + (16 * i).toString(16).toUpperCase()).slice(-2) + "&gt<br />";
+    // Write h on the left column (offset line pointer)
+    _l.innerHTML = _h;
+  }
+
+  function button_UndoText() { // undo last modification
+    _bytebuff= _bytebuff_old; //restore previous version of _bytebuff
+    button_Block(_editedBlockNr + (_isSectorBlock ? 1 : 0)); //the best to reset the full display is to use button_Block()
+  }
+
+  function button_EraseMem() { //clear the bytes in memory _bytebuff and reset screen by button_Block(_editedBlockNr)
+    _bytebuff = []; //clear the bytes in memory
+    _editedBlockNr = 0;
+    _bReplace = false;
+    _bInslimit = false;
+    _gid("idBinsert").checked = true;
+    button_Block(_editedBlockNr + (_isSectorBlock ? 1 : 0)); //the best to reset the full display is to use button_Block()
+  }
+
+  function button_SaveMem(i) {
+    let win = window.top;
+    var msg = {};
+    if (i)
+      msg = {txt: "Save & Quit!", hexdata: _bytebuff}
+    else
+      msg = {txt: "Quit without Save!", closeHexED: true}
+    win.postMessage(msg, "*");
+  }
+
+  function refreshTextarea() { //textarea: display the memorized _txtbuff global variable
+    _hta.value = _txtbuff;
+    // Clean the textarea value
+    _hta.value = _hta.value
+      .replace(/[^0-9A-F]/ig,"")
+      .replace(/(..)/g,"$1 ")
+      .replace(/ $/,"")
+      .toUpperCase();
+
+    // Set the height of the textarea according to its byte length
+    _hta.style.height = (1.5 + _hta.value.length/47) + "em";
+
+    //adjust Hex text
+    _ll = _hta.value.length; //including the text modification that occurs on "OnInput"
+    _lf = _ll; //_lf is the initial absolute size of the displayed textarea (in number of char)
+
+    _txtbuff = _hta.value;
+
+    _hta.focus();
+
+    //
+    updateOffset();
+    //display ascii string for the right box (table cell)
+    updateAscii(); //work on _txtbuff
+
+    sendEditorHeight();
+  }
+  
+  function cTextBuffSize() { //return computed expected size of the textarea in number of char accordingly of block size of _editedBlockNr
+    return cBlockSize(_editedBlockNr) * 3 - 1; //expected size of the textarea in number of char
+  }
+
+  function textareaOnInput() { // MAIN textarea FUNCTION onInput
+    //memorize _bytebuff before handling the Input event for the Undo;
+    _bytebuff_old = _bytebuff;
+    _tmpbuffsize = _bytebuff.length;
+    
+    var cp; //current caret position
+    // On input, store the length of clean hex before the textarea caret in b
+    cp = _hta.value
+      .substr(0, _hta.selectionStart)
+      .replace(/[^0-9A-F]/ig,"")
+      .replace(/(..)/g,"$1 ")
+      .length;
+
+    // Clean the textarea value
+    _hta.value = _hta.value
+      .replace(/[^0-9A-F]/ig,"")
+      .replace(/(..)/g,"$1 ")
+      .replace(/ $/,"")
+      .toUpperCase();
+
+    //adjust Hex text
+    var tmp = _hta.value; //get the textarea text
+    _ll = _hta.value.length; //new length after input, including the text modification that occurs on "OnInput"
+    
+    //INSERT HANDLER
+    if (_ll && !_bReplace) { //we are in INSERT MODE, and _ll is greater than 0
+    //adjust last byte, convert half-byte into full-byte with adding a temp "0"
+      var ccc = _ll == 1 ? " " : tmp[_ll - 2];
+      if (ccc == " ") {// there is a lonely hex char
+        if (_c == true) { //the lonely char is already a temp "0"
+          _hta.value = tmp.slice(0,-2); //cancel it and the space before
+          _ll -= 2;
+          _c = false; //reset flag
+        }
+        else { //the lonely char is a lonely hex
+          _hta.value += "0"; //add a zero to it
+          _ll++;
+          _c = true; //set the flag to memorise that we have added a temp "0"
+        }
+      }
+    }
+    else //REPLACE HANDLER OR _ll is null (global supp)
+      _c = false; //reset _c
+
+    //var bpos = (_ll + 1) / 3; //this is the total of bytes
+    //INSERT HANDLER to be continued here after
+    //REPLACE HANDLER
+    if (_bReplace) {
+      tmp += " "; //add a space to align on 3 chars the text got from the textarea
+      // nota : _txtbuff is the old text got from textarea before textareaOnInput event
+      //st1 = temp buffer contains the new char and string; 
+      var st1 = tmp.substring(0, cp); //_cp is the current caret position after the textareaOnInput event
+      var lst1 = st1.length;
+      //stins = string of inserted char (from the input keyboard) or string (from the clipboard)
+      var stins = tmp.substring(_bs, cp);  //_bs is the caret position before the textareaOnInput event
+      stins = stins.replace(/[^0-9A-F]/ig,""); //remove space in inserted string
+      var lstins = stins.length;
+      var st2 = ""; //remaining text in the selection after the insertion char or string (suppressed when INSERT MODE)
+      var st3 = ""; //remaining text after insertion selection
+      //prepare st2 replacement string
+      if (_br > 1 && cp < _be) { //we have replaced chars with selection of more than one char 
+        st2 = _txtbuff.substring(cp, _be); 
+        if (lstins == 0) { //cas of SUPP or DEL
+          stins = "0"; //it's like written "0"
+          lstins = st2.length; //in the st2 string
+        }
+        if (lstins == 1) { //one char has been entered: we must fill the remaining selection with the entered char
+          st2 = st2.replace(/[0-9A-F]/ig, stins);
+        }
+        else if (lstins > 1) { //more than one char has been entered: we must fill the clipboard into remaining selection
+          var j = 0;
+          var ins = [];
+          //copy halfbyte of the inserted string into the char pattern of st2
+          for (var i = 0; i < st2.length; i++) {
+            ins.push(st2.at(i) == " " ? " " : stins.at(j++)); 
+            if (j == stins.length) j=0;
+          }
+          st2 = ins.join(""); //st2 is ready !
+        }
+      }
+      if (_ll > _lf) { //(cp > _be) char or string insertion
+        st3 = _txtbuff.substring(cp, _lf);
+        st2 = ""; //in case of
+      }
+      if (_ll < _lf) {//(cp < _be) one char supp, or more if st2 not empty
+        if (!st2) { //case of on char deletion, st2 is empty
+          st2 = "0";
+          st3 = _txtbuff.substring(cp+1, _lf);
+        }
+        else {//st2 is not empty
+          st3 = _txtbuff.substring(_be, _lf);
+        }
+        cp = _be;
+      }
+      if (_ll == _lf) { //(_be == cp) char replacement of selection replaced exactly by clipboard
+        st3 = _txtbuff.substring(cp, _lf);
+        st2 = ""; //in case of
+      }
+      tmp = st1 + st2 + st3;
+      _hta.value= tmp.slice(0, _lf); //in case of replace is too long, shorten it !
+      _hta.style.height = (1.5 + _hta.value.length/47) + "em";
+    }
+    //END OF REPLACE HANDLER
+    else { //INSERT HANDLER
+    //if something has been deleted in INSERT MODE: do standard thing, so nothing special to code here
+    }
+    //END OF INSERT HANDLER
+
+    _txtbuff = _hta.value;
+    _bs = cp;
+    getBytesFromTextarea(); //return value in _editedBuff
+
+    //INSERT MODE : shift values in memory of one hex char
+    if (_txtbuff.length > cTextBuffSize() && _c) { // we have pushed a tmp zero in memory, out of the textarea!!
+      var i = pushModifToMem(_editedBlockNr) - 1; // we have to adjust _bytebuff at offset i that is the last edited byte, returned by pushModifToMem()
+      //b true means no values in memory after insertion
+      var b = (i + 1) == _bytebuff.length;
+      if (!b) { //if there are bytes values after insertion
+        _bytebuff[i] |= (_bytebuff[i+1] >> 4) & 0xF; //first byte with the dummy zero at position i in _bytebuff
+        i++;
+        while (i < _bytebuff.length - 1) {
+            _bytebuff[i] = ((_bytebuff[i] << 4) & 0xF0) | ((_bytebuff[i+1] >> 4) & 0xF);
+            i++;
+        } 
+        //here i == bytebuff.length - 1 (the last byte in the memory)
+        if (!_za) { //_za is a flag set to avoid accumulation of dummy zero at the end of memory buffer
+          _bytebuff[i] = ((_bytebuff[i] << 4) & 0xF0);
+          _za = true;
+        }
+        else {
+          _bytebuff.pop();
+          _za = false;
+        }
+      }
+      else _za = true; //else there is nothing else to do except set _za
+      _c = false; // reset _c for the next hex value to be entered
+    }
+    else pushModifToMem(_editedBlockNr);
+
+    if (!_bReplace) { //we are in INSERT mode
+      if (_bInslimit) { //reajust the byte buffer to keep its size
+        var df = _tmpbuffsize - _bytebuff.length;
+        if (df > 0) //we have changed byte buffer size by suppressing bytes, we need to compensate with 0
+          while (df > 0) {
+            _bytebuff.push(0);
+            df--;
+          }
+        else if (df < 0) //we have changed byte buffer size by adding bytes, we need to remove them
+          while (df < 0) {
+            _bytebuff.pop();
+            df++;
+          }
+      }
+      _txtbuff = ""; //reset textarea text
+      _editedBuff = []; //reset textarea hex buffer
+      readBlockMem(_editedBlockNr); //copie the memory at block(s) into _editedBuff
+      setTextareaText(); //take the _editedBuff and convert it to text in _txtbuff
+      refreshTextarea(); //initialize the textarea
+    }
+    //refresh display outside the textarea
+    displayMemoryInTable(true); 
+    updateOffset();
+    updateAscii(); //works on _txtbuff
+
+    // If the caret position is after a space or a line break, place it at the previous index so we can use backspace to erase hex code
+    if (!_bReplace && _bs > cTextBuffSize())
+      _bs = cTextBuffSize() - 1;
+    if (_hta.value[_bs] == " ")
+      _bs--;
+    // Put the textarea caret at the right place
+    _hta.setSelectionRange(_bs,_bs);
+  }
+
+</script>
+  <meta charset="utf-8">
+  <title>Byte Hexa Editor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body onload="bodyOnLoad_Init()">
+
+  <!-- <div><input id="w" type="file" onchange="inputOnChange_Load()" aria-label="load"><button>load</button></div>-->
+  <!-- <div><button onclick="button_Save()">save</button></div>-->
+  <div style="text-align: center;"><b>Welcome to Atari 8-bit Rom Image File Hex Editor!</b><br />Click on a sector or block number to Edit - Click M tool to exit</div>
+  <div id="first_table" style="display: none;">
+    <table class="list_table">
+        <tr style="background-color: #ddf;">
+          <td width="120">Click to Edit<br />Sector/Block</td>
+          <td width="330">Byte Hex Dump<br />00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F</td>
+          <td width="132" style="text-align: center; vertical-align: middle;"><label for="swAta1"></label><button id="swAta1" name="swAta1" onclick="switchAscii()">ASCII CHAR DISPLAY</button></td>
+        </tr>
+        <tr>
+          <td id="ic11" style="text-align: end;"></td>
+            <td>
+              <div id="ic12"><br /></div>
+            </td>
+          <td id="ic13"><br /></td>
+        </tr>
+    </table>
+  </div>
+
+  <div id="edit_table" style="display: none;">
+    <table>
+      <tr>
+        <td colspan="3" style="text-align: center;">
+          <b>Edition of a Block or Sector</b><br />
+          <em>Please enter Hexa 0...F char for bytes. You can change Replace or Insert text mode.</em>
+        </td>
+      </tr>
+      <tr style="background-color: #ddf;">
+        <td id="disp_block" width="120" style="font-weight: bold;">#xxx</td>
+        <td width="330">00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F</td>
+        <td width="132" style="text-align: center; vertical-align: middle;"><label for="swAta2"></label><button id="swAta2" name="swAta2" onclick="switchAscii()">ASCII CHAR DISPLAY</button></td>
+      </tr>
+      <tr>
+        <td id="disp_line" style="text-align: end;">00&gt</td>
+        <td>
+          <textarea id="hta" spellcheck="false" draggable="true" oninput="textareaOnInput()" onclick="textareaOnClick()" onselect="textareaOnSelect()" cols="47" placeholder="Enter hexa number 00 .. FF"></textarea>
+        </td>
+        <td id="disp_char">.</td>
+      </tr>
+      <tr>
+        <td colspan="3">
+          <span style ="display: flex; flex-direction: column; text-align: center;">
+          <div><b>INPUT MODE:</b>
+            <input id="idBreplace" onclick="radioOnClick_Change(1)" type="radio" name="textMode" checked /><label for="idBreplace">Replace char mode</label>
+            <input id="idBinsert" onclick="radioOnClick_Change(2)" type="radio" name="textMode" /><label for="idBinsert">Insert char mode</label>
+            <input id="idBinsertL" onclick="radioOnClick_Change(3)" type="radio" name="textMode" /><label for="idBinsertL">Insert char mode within fixed filesize</label>
+          </div>
+          <div><span> <button onclick="button_EraseMem()">[ERASE MEM]</button> <button onclick="button_UndoText()">[UNDO LAST MODIFICATION]</button> 
+            <button onclick="button_SaveMem(0)">[QUIT without SAVING]</button> <button onclick="button_SaveMem(1)">[SAVE MEM & QUIT]</button></div></span>
+        </span>
+        </td>
+      <tr>
+        <td colspan="3">
+          <div> Caret position: [start-end](selection size): <span id="i1"></span></div>
+          <div> Original file Size: <span id="fl1"></span> bytes; Current file size: <span id="fl2"></span> bytes</div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3" style="text-align: center;"><em>You can also copy & paste selected text bytes, and undo last modification once.<br />Be carreful of half-byte in Insert mode: enter 2 hex char for 1 byte!</em></td>
+      </tr>
+    </table>
+  </div>
+  
+  <div id="end_table" style="display: block;">
+    <table class="list_table">
+      <tr style="background-color: #ddf;">
+        <td width="120">Click to Edit<br />Sector/Block</td>
+        <td width="330">Byte Hex Dump<br />00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F</td>
+        <td width="132" style="text-align: center; vertical-align: middle;"><label for="swAta3"></label><button id="swAta3" name="swAta3" onclick="switchAscii()">ASCII CHAR DISPLAY</button></td>
+      </tr>
+        <tr>
+          <td id="ic31" style="text-align: end;"></td>
+            <td>
+                <div id="ic32"></div>
+            </td>
+          <td id="ic33"><br /></td>
+        </tr>
+    </table>
+  </div>
+
+</body>
+</html>
