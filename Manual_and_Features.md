@@ -4,7 +4,7 @@ This web page purpose is to present the features and to give hints on how the **
 
 This is a screenshot of the HTML page at its openning when no image file is loaded:
 
-![image](https://github.com/user-attachments/assets/2083b861-5fd6-4af1-8299-cf2707e9e7f1)
+![image](https://github.com/user-attachments/assets/5dea5b09-5cd1-4660-8735-7fed7b48bff3)
 
 The left display panel of the HTML page => display the main menu (Tool letter commands), name of loaded image file, type of image file, directory of readable (validated) Atari files, size of image file.
 
@@ -107,7 +107,7 @@ Clicking on the **[Toggle Disassembly/HexDump View]** button shows the disassemb
 Note that the ROM Memory Bank mapping type is also the Cartdridge type. This information is retreived from the CART header (if **CAR** image file).
 If no type is found in the ROM image file, then the possible types are validated in the **[Rom Type Selection]** list according to memory size parameter.
 
-**Note:** Single **BIN** files loaded in the  will be considered as a ROM Image File. If the **BIN** file is an Atari DOS file in an Atari Disk Image (image of an Atari floppy disk), it will be displayed as a *Executable Atari DOS file and Dump file*. The same applies to files with **ROM, A52, CAR** extensions.
+**Note:** Single **BIN** files loaded in the  will be considered as a ROM Image File. If the **BIN** file is an Atari DOS file in an Atari disk Image (image of an Atari floppy disk), it will be displayed as a *Executable Atari DOS file and Dump file*. The same applies to files with **ROM, A52, CAR** extensions.
 
 ### 1.7. DSK Image files
 
@@ -135,13 +135,13 @@ DAT Image files have the **DAT** file extensions. They are displayed like this:
 
 A DAT file is considered as a data file. So only its Hexdump is displayed.
 
-In an Atari Disk Image (image of an Atari floppy disk), the Atari DOS files may have every kind of extensions.
+In an Atari disk Image (image of an Atari floppy disk), the Atari DOS files may have every kind of extensions.
 
 When a file type is unknown (that is not in the extension list of the previous **1.2 to 1.5 chapters** above), it is considered as *DAT* by the Tool in order to be displayed. Thus **DAT** is the *default* file type.
 
 ### 1.10. DCM Image files
 
-DCM disk image files have the **DCM** file extensions. They are open by the Tool, decompressed and then displayed as an ATR disk image file like this:
+DCM disk image files have the **DCM** file extensions. They are open by the Tool, unpacked and then displayed as an ATR disk image file like this:
 
 ![image](https://github.com/user-attachments/assets/0c13a5e6-79fd-4abc-9ab7-94b4655a9ef7)
 
@@ -282,7 +282,7 @@ These commands are in the left floater and consist of:
 6. the "P" char command. When clicked, it toggles the display of the Option menu.
 7. the "E" char command. When clicked, it toggles the display of the Extract and Disassemble menu.
 8. the "S" char command. When clicked, it toggles the display of the Search menu.
-9. the "M" char command. When clicked it will show the HEX EDITOR to modify the selected file _[this feature is not available yet]_
+9. the "M" char command. When clicked it will show the **Atari Hex Editor** to modify the selected file.
 
 The command letter is greyed (that is inactive) if the command is not relevant according to the context.
 
@@ -413,21 +413,46 @@ Example of graphic GR7 pictures found into the SPACON.FLI executable file at off
 
 ### 3.9. "M" command for the Modify Menu that launches the Atari Hex Editor
 
-When a file is open in the tool, you can open the Atari Hex Editor to modify it.
+When a file is loaded in the tool, you can open the Atari Hex Editor to modify it. Click on "M" Tool to launch the Editor.
 
-![image](https://github.com/user-attachments/assets/1ed34759-5027-4db8-aa37-0d3e0dbf8f33)
+![image](https://github.com/user-attachments/assets/e2fd3133-730a-4f51-a1b8-5b6c662bc385)
 
-Click on a block or a sector to activate its modification. The blue area is the editor.
+You will open the Atari 8-bit Rom Image File Hex Editor frame in the Tool.
 
-![image](https://github.com/user-attachments/assets/07d0d945-05c4-42eb-935f-d79caad6af6c)
+Then click on a block or a sector to activate its modification. You can also click on the Char Display to change from ASCII to Internal ATASCII.
+
+![image](https://github.com/user-attachments/assets/91085492-c27e-4353-9d17-465b33730c02)
+
+Then you are in the edition mode. The blue area is the editor.
+
+![image](https://github.com/user-attachments/assets/7f89f118-983f-46f4-9b74-e04f9a9bc33a)
 
 In the Editor, you may cancel the changes, and if you save the changes, it will open the modified file as a new file in the tool:
 
-![image](https://github.com/user-attachments/assets/c70ec9dc-4435-4e40-a8d0-1fa9db69620c)
 
-## 4. Tool Limitations and other information
 
-### 4.1. Use of Atari ATASCII Control Chars
+## 4. Other Tool features
+
+### 5.1. Atari Executable file segment merging feature
+
+The Atari Executable file segment merging purpose is to fix buggy empty segments, to merge segment that are close to in memory...
+The purpose is not to get the smallest file, but a file with comprehensive segments, easy to disassemble.
+
+Click on the **[Merge segments into a new file]** to run the feature and open the new file in the Tool (named as mergedfile.xex).
+
+Test it on DigDug or on your MAC65 assembler code!
+
+***Before:*** the Atari Executable file analysis has detectec that segments could be merged:
+
+![image](https://github.com/user-attachments/assets/0fa282da-9bf6-4565-877d-783eb38213cc)
+
+***After:*** the result is an optimized file easy to desassemble:
+
+![image](https://github.com/user-attachments/assets/9d23663a-df5c-4551-bea7-73af20b12b68)
+
+## 5. Tool Limitations and other information
+
+### 5.1. Use of Atari ATASCII Control Chars
 
 Atari Control Chars in ATASCII are the following chars:
 
@@ -453,7 +478,7 @@ Then save it as a LST file, and re-open it the Tool, you will get:
 The _$9B EOL_ char made an unwanted line feed.
 Happily, this limitation should not occur often in your code...
 
-### 4.2. Error log when trying to show (display) a file
+### 5.2. Error log when trying to show (display) a file
 
 Example of error display in the right panel if the display of a file goes wrong:
 
@@ -463,7 +488,7 @@ The problem should be within the javascript code of the Tool, that is a bug. So 
 
 Note that the HTML console will show the detailled error code, and please send me the original disk image file in order for me to check.
 
-### 4.3. Empty Disk Image File loading into the Tool
+### 5.3. Empty Disk Image File loading into the Tool
 
 Trying to load an Empty Disk Image File into the Tool HTML page => The file will be loaded in the Tool, but can not be displayed in the right panel…
 
@@ -471,7 +496,7 @@ So an HTML Alert window is displayed. There nothing to do, you can close the ima
 
 ![image](https://github.com/user-attachments/assets/d3a73755-ffe8-403b-914c-c242b188d2cd)
 
-### 4.4. Limitation of the Tool disassembly process
+### 5.4. Limitation of the Tool disassembly process
 
 When an executable file contains several segments pointing at the same addresses, new data of the last segment will overlap the previous ones and will modify the disassembly flags, so the hyperlinks may appear broken, or wrong code instruction may be considered as valid.
 
@@ -480,5 +505,5 @@ In the following example, the executable loads 2 times the segment $4000-7FFF wi
 ![image](https://github.com/user-attachments/assets/8beeaaaf-b14c-4b8f-b8fb-a92a5359c664)
 
 
->PVBest infoo, November 2024
+>PVBest infoo, April 2025
 
