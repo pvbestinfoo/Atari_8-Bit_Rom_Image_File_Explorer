@@ -22,7 +22,7 @@ Disk image files are usually binary image of Atari floppy disks, and have the **
 
 Left display panel => The disk image name and size, and the retrieved directory with all the validated files from the disk DOS structure.
 
-Right display panel => The identified "Ext Type", the disk characteristics, the boot sector informations, and the full DOS directory analysis. Then below is displayed the boot sectors disassembly (disk boot program), and the hexdump of all sectors of the disk image.
+Right display panel => The identified **Ext Type**, the disk characteristics, the boot sector informations, and the full DOS directory analysis. Then below is displayed the boot sectors disassembly (disk boot program), and the hexdump of all sectors of the disk image.
 
 The Tool's context button **[Download ATR file]** can convert the _XFD_ file into an _ATR_ file with the famous Nick Atari 16-bytes header.
 
@@ -111,7 +111,7 @@ If no type is found in the ROM image file, then the possible types are validated
 
 ### 1.7. DSK Image files
 
-DSK Image files have the **DSK** file extensions. They are displayed like this:
+DSK Image files have the **DSK** file extension. They are displayed like this:
 
 ![image](https://github.com/user-attachments/assets/92e78a55-4d31-411a-a495-c2fc96d4b310)
 
@@ -121,7 +121,7 @@ You can click on **[Download ATR file]** button to convert it into ATR or **[Dow
 
 ### 1.8. ARC Image files
 
-ARC Image files have the **ARC** file extensions. They are displayed like this:
+ARC Image files have the **ARC** file extension. They are displayed like this:
 
 ![image](https://github.com/user-attachments/assets/6e2af404-d6d8-42f3-8c9d-b02616c5cf5a)
 
@@ -129,9 +129,9 @@ An ARC file is like a ZIP file, it is an ARChive containning compressed files. C
 
 ### 1.9. DAT Image files
 
-DAT Image files have the **DAT** file extensions. They are displayed like this:
+DAT Image files have the **DAT** file extension. They are displayed like this:
 
-![image](https://github.com/user-attachments/assets/97005c25-12c0-4a99-a744-59272f8ad76a)
+![image](https://github.com/user-attachments/assets/5fe56ab5-50b4-4a1c-8289-05ca045f573e)
 
 A DAT file is considered as a data file. So only its Hexdump is displayed.
 
@@ -139,15 +139,20 @@ In an Atari disk Image (image of an Atari floppy disk), the Atari DOS files may 
 
 When a file type is unknown (that is not in the extension list of the previous **1.2 to 1.5 chapters** above), it is considered as *DAT* by the Tool in order to be displayed. Thus **DAT** is the *default* file type.
 
+When a DAT file is displayed, you can force it and its data to become a boot disk image by clicking on the **[Create XFD/ATR disk]** button.
+
 ### 1.10. DCM Image files
 
-DCM disk image files have the **DCM** file extensions. They are open by the Tool, unpacked and then displayed as an ATR disk image file like this:
+DCM disk image files have the **DCM** file extension. They are open by the Tool, unpacked and then displayed as an ATR disk image file like this:
 
 ![image](https://github.com/user-attachments/assets/0c13a5e6-79fd-4abc-9ab7-94b4655a9ef7)
 
 ### 1.11. KBOOT Image files
 
-KBOOT disk image files usually have the ATR extension, and they have the name of the Atari Executable file that is on the disk.
+KBOOT disk image files usually have the ATR extension, and they have the name of the Atari Executable file that is on the disk, but it has a small size.
+When loaded by the Atari OS, during disk boot, the letter "k" appears on the top left corner of a KBOOT disk.
+
+![image](https://github.com/user-attachments/assets/04da15c4-5547-4659-b32c-1246f9f339ef)
 
 A KBOOT disk image is opened by the Tool as a generic DOS file that have only one file, that is Atari Executable file itself, named KBOOFILE.XEX by default.
 
@@ -380,9 +385,19 @@ To set an extract, fill the input fields for extract parameters:
 
 And click on **[EXTRACT&DISASSEMBLE]** button to launch the Extract & Disassemble process. Then the disassembly of the selected file data extract is displayed in the right panel window.
 
+Button **[CANCEL EXTRACT]** => cancel the current extracted data and refresh display.
+
+The other button are these ones:
+
+![image](https://github.com/user-attachments/assets/2bced64b-77d9-4f42-ab56-80576b81ae82)
+
 Button **[Download extracted data]** => download the extracted data in a file this is named *[curent_filename]_extract.dat*.
 
-Button **[CANCEL extracted data]** => cancel the current extracted data and refresh display.
+Button **[Save extract to OBJ file]** => download the extracted data into an OBJ file.
+
+Button **[Save extract into ATR disk]** => download the extracted data into an ATR file.
+
+Button **[Convert & Save extract into ATR disk]** => convert and download the extracted data into an ATR file.
 
 Please note that the extract is memorised into the file with the extract parameters, so it will be redisplay even after:
 * changing displayed file and reselect the file that has the extract
@@ -427,13 +442,13 @@ Then you are in the edition mode. The blue area is the editor.
 
 ![image](https://github.com/user-attachments/assets/7f89f118-983f-46f4-9b74-e04f9a9bc33a)
 
-In the Editor, you may cancel the changes, and if you save the changes, it will open the modified file as a new file in the tool:
+In the Editor, you may cancel the changes, and if you save the changes, the modified file will be opened in the tool as a new file that is named *[curent_filename]_modified.dat*:
 
-
+![image](https://github.com/user-attachments/assets/ae881f19-a521-4ba7-8980-0c9811fff862)
 
 ## 4. Other Tool features
 
-### 5.1. Atari Executable file segment merging feature
+### 4.1. Atari Executable file segment merging feature
 
 The Atari Executable file segment merging purpose is to fix buggy empty segments, to merge segment that are close to in memory...
 The purpose is not to get the smallest file, but a file with comprehensive segments, easy to disassemble.
