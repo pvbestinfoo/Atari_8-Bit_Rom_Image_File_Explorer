@@ -102,8 +102,8 @@
         padding: 8px;
         border-bottom: 1px solid #CCC;
         font-size: small;
+        margin-bottom: 8px;
     }
-    
     /*(PVB ADD) NEW ADDED STYLES FOR ROM MANAGEMENT MENU*************/
     .rommap {
         padding: 8px;
@@ -130,37 +130,37 @@
         padding-left: 12px;
     }
     /*(PVB ADD) STYLE FOR THE DISASSEMBLY EXTRACT BUTTON*************/
-    .buttonstyled {
-        border-color: #FFF;
+    .btnstyle {
+        border-color: #AAC;
         padding: 3px;
-        border-radius: 4px;
+        border-width: 1px;
+        margin-inline: 2px;
         /*height: auto;
+        border-radius: 4px;
         text-align: center;
         color: #000;*/
     }
-    .buttonstyled:hover {
+    .btnstyle:hover {
         background-color: #CCF;
     }
-    .buttonstyled:active {
+    .btnstyle:active {
         box-shadow: inset -1px -1px 2px rgba(255, 255, 255, 0.6), inset 1px 1px 2px rgba(0, 0, 0, 0.6);
     }
-    .buttonstyled:disabled {
+    .btnstyle:disabled {
         color: #888;
         background-color: rgba(180, 180, 180, 0.6);
     }
-    /* (PVB ADD) STYLE FOR THE ID=FILE DISASSEMBLY & DUMP DISPLAY OPTIONS*/
+
+    /* (PVB ADD) STYLE FOR THE ID=FILE CHARSET, LISTING DISASSEMBLY & DUMP OPTIONS*/
     pre#disoption {
         border-bottom: solid 1px #CCC;
     }
     .doblock {
         margin-top: -20px;
         display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-    } 
-    .docbgrp {
-	    display: flex;
-	    align-items: center;
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
     }
     input[type="checkbox"] {
 	    width: 10px;
@@ -241,8 +241,8 @@
         background: #CCF;
     }
 
+    /*(PVB) this is used to display extension list //previously in// font-weight: 300;*/
     .exts {
-        font-weight: 300;
         padding: 4px;
         margin: 4px;
         font-size: small;
@@ -2217,12 +2217,12 @@
     // Simple radio and check buttons
     var _radios = {};
     var _checks = {};
-    function radio_init(name, values, value) {
+    function radio_init(name, values, value, col) { //(PVB ADD) 'col' for direction of display radio: if 'col' is true, then add <div> over <span>
         var cur = _radios[name] ? _radios[name].value : 0;
         value = value || cur;
         var s = '';
         for (var i = 0; i < values.length; i++)
-            s += `<span onclick="radio_click('${name}',${i})" ${i == value ? "class='hilite'" : ""}>${values[i]}</span>`;
+            s += (col ? "<div class='radio'>" : "") + `<span onclick="radio_click('${name}',${i})" ${i == value ? "class='hilite'" : ""}>${values[i]}</span>` + (col ? "</div>" : "");
         _radios[name] = { values: values, value: value };
         return s;
     }
@@ -2308,7 +2308,7 @@
                         c += 0xE000; //(PVB COM) U+E0xx is the specific Atari Chartset in the css embedded font style
                         break;
                     case 0x20: //(PVB ADD) 0x20 space char
-                        //c = 0x00A0; // the 0x20 space char is set to "&nbsp;" (0xA0) which has correct witdth
+                        //c = 0x00A0; // the 0x20 space char is set to "&nbsp;" (0xA0) which has correct width
                         c +=  0xE000; //or use de 0x20 from the ATARI Charset for correct space width display ?
                         break;
                     default:
@@ -2333,7 +2333,6 @@
                 var c = src.charCodeAt(i); //get the UTF-16 value for the char
                 if (c == 0x200B) //keep the ZERO-WIDTH SPACE set by the indent button
                     c = String.fromCharCode(c);
-                //else if (c == 0xA0) c = ' '; //if 0xA0 &nbsp is the large non-breaking space in the editor, convert it into a standard space
                 //or do nothing in case of use of 0xE020 instead of "0xA0" &nbsp
                 else //other char
                     c = escAtasciiChar(c & 0xFF); //cancel the +E0xx Atari font code value for a standard ascii char
@@ -2967,6 +2966,7 @@
         var nmap = {};
         var ncount = 0;
         for (var j = vnt_begin; j < vnt_end; j++) {
+            if ((a[j] & 0x7F) < 0x21 ) return failed("Invalid Basic variable name"); //(PVB ADD)
             n += String.fromCharCode(a[j] & 0x7F);
             if (a[j] & 0x80) {
                 if (n.length && n[n.length - 1] == '(')
@@ -3773,22 +3773,38 @@
         '030A': ["DAUX1", "COMMAND AUXILLARY BYTE 1 (SECTOR NBR)(LO BYTE)"],
         '030B': ["DAUX2", "COMMAND AUXILLARY BYTE 2 (SECTOR NBR)(HI BYTE)"],
         ///end-of DCB
-        '030C': ["TIMER1", "INITIAL TIMER VALUE"],
+        '030C': ["TIMER1", "INITIAL BAUD RATE TIMER VALUE"],
         '030D': ["TIMER1+1", ""],
         '030E': ["ADDCOR/JMPERS", "[800]ADDITION CORRECTION /[XE]OPTION JUMPERS"],
         '030F': ["CASFLG", "CASSETTE MODE WHEN SET"],
-        '0310': ["TIMER2", "FINAL TIME VALUE (USED TO COMPUTE BAUD RATE)"],
+        '0310': ["TIMER2", "FINAL TIMER VALUE (USED TO COMPUTE BAUD RATE)"],
         '0311': ["TIMER2+1", ""],
         '0312': ["TEMP1", "TEMP LOCATION"],
-        '0313': ["TEMP1+1/TEMP2", "TEMP LOCATION"],
+        '0313': ["TEMP1+1", "TEMP LOCATION"],
         '0314': ["TEMP2/PTIMOT", "[800]TEMP2 /[XL]PRINTER TIME OUT"],
         '0315': ["TEMP3", ""],
         '0316': ["SAVIO", "SAVE SERIAL IN DATA PORT"],
         '0317': ["TIMFLG", "TIME OUT FLAG FOR BAUD RATE CORRECTION"],
-        '0318': ["STACKP", "SIO STACK POINTER SAVE LOC"],
-        '0319': ["TSTAT", "TEMP STATUS LOC"],
-        '031A': ["HATABS", "HANDLER ADDRESS TABLE (38 BYTES UP TO $33F)"],
-        '0321': ["MAXDEV", "MAXIMUM HANDLER ADDRESS INDEX"],
+        '0318': ["STACKP", "SIO STACK POINTER REGISTER"],
+        '0319': ["TSTAT", "TEMP STATUS LOCATION"],
+        /// $31A-$33F HATABS HANDLER ADDRESS TABLE (38 BYTES UP TO $33F)
+        '031A': ["HATABS+0", "PRINTER DEVICE (P)"],
+        '031B': ["HATABS+1", "PRINTER DEVICE ($30)"],
+        '031C': ["HATABS+2", "PRINTER DEVICE ($E4)"],
+        '031D': ["HATABS+3", "CASSETTE DEVICE (C)"],
+        '031E': ["HATABS+4", "CASSETTE DEVICE ($40)"],
+        '031F': ["HATABS+5", "CASSETTE DEVICE ($E4)"],
+        '0320': ["HATABS+6", "DISPLAY EDITOR (E)"],
+        //(PVB TODO) Check '0321': ["MAXDEV", "MAXIMUM HANDLER ADDRESS INDEX"],
+        '0321': ["HATABS+7", "DISPLAY EDITOR ($00)"],
+        '0322': ["HATABS+8", "DISPLAY EDITOR ($E4)"],
+        '0323': ["HATABS+9", "SCREEN HANDLER (S)"],
+        '0324': ["HATABS+A", "SCREEN HANDLER ($10)"],
+        '0325': ["HATABS+B", "SCREEN HANDLER ($E4)"],
+        '0326': ["HATABS+C", "KEYBOARD HANDLER (K)"],
+        '0327': ["HATABS+D", "KEYBOARD HANDLER ($20)"],
+        '0328': ["HATABS+E", "KEYBOARD HANDLER ($E4)"],
+        // $329-$33F UNUSED HATABS
         '033D': ["PUPBT1", "[XL]POWER-UP/RESET"],
         '033E': ["PUPBT2", "[XL]POWER-UP/RESET"],
         '033F': ["PUPBT3", "[XL]POWER-UP/RESET"],
@@ -4749,7 +4765,7 @@
             block.lines.push(a); //put asm listing in a new block lines
 
             if (!a.valid)
-                block.errs++; //(PVB COM) err++ counts the number of error in the block, that is the number of "valid = false"
+                block.errs++; //(PVB COM) errs++ counts the number of error in the block, that is the number of "valid = false"
             
             //if the asm listing encounter a 0x08 then create a new block
             if ((a.flags & 0x08) && !block.errs)
@@ -4969,7 +4985,7 @@
                     m = false; // to analyse new remaining block
                     //back to the beginning of the while(true) loop
                 }
-                b = b2; //update block pointer after having add the previous blocks
+                b = b2; //update block pointer after having added the previous blocks
             }
         }//end of for loop
 
@@ -5031,18 +5047,21 @@
         return s;
     }
     
-    //(PVB ADD)
-    function isAtariNameChar(str, md) { //isAtariText // valid filename char are 'space' 0-9 A-Z a-z
-    // plus '@' and '_' for myDOS fileName
-        if (str[0] == 0x20) return false; // valid file name cannot start with a space
+    //(PVB ADD) isAtariNameChar(str, md) function used in one_dir() to check if the DOS filename is valid
+    function isAtariNameChar(str, md) { //isAtariText // valid filename char are 'space' 0-9 A-Z a-z; and '@' and '_' for myDOS fileName
+        var er = 1;
+        if (str[0] == 0x20 || (str[0] >= 0x30 && str[0] <= 0x39)) er = -1; // invalid filename because starts with a 'space', or by a number
         for (var i = 0; i < str.length; i++) {
-            var c = str[i];
-            if (!((c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A))) //not OK if not alphabet
-                if (!(c == 0x20)) //not OK if not 'space'
-                    if (!(md && (c == 0x40 || c == 0x5F))) //not OK if not '@' or '_' (for myDOS fileName)
-                        return false; //exit because char not OK
+            if (str[i] & 0x80) er = -1; //use of unsual inverted chars (not a guenuine DOSx filename)
+            var c = str[i] & 0x7F; //convert inverse char
+            if (!(c == 0x20 || (c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A))) { //not OK if not alphabet
+                if (c == 0x2A || c == 0x2D || c == 0x2E)
+                    er = -1; //unsual '*', '-' and '.' chars, not in genuine DOSx filename
+                else if (!(md && (c == 0x40 || c == 0x5F)))
+                    return 0; //not OK if not '@' or '_' (for myDOS fileName)
+            }
         }
-        return true;
+        return er;
     }
     //(PVB END OF ADD)
 
@@ -5331,14 +5350,14 @@
                 else if (XFD.is_xfd(a)) te = 'xfd';
                 else { //none of them
                     console.log(">get_ext() '" + name + "'' is not an ATR file, nor a PRO, nor ATX, nor XFD => show it as 'DAT'!");
-                    return 'err';
+                    return 'ere';
                 }
                 return te;
             }
             if (ext == "dcm") { //check DCM Disk Image
                 if (a[0] == 0xF9 || a[0] == 0xFA) return 'dcm';
                 console.log(">get_ext() has not found the DCM signature for file " + name + ", so force it to 'DAT'");
-                return 'err';
+                return 'ere';
             }
             if (_exts[ext]) { //(PVB COM) returns the extension if found in the table of extensions
                 console.log(" get_ext() has found extension '" + ext + "' for file " + name + " in the _exts table");
@@ -5422,7 +5441,7 @@
     //(PVB ADD) get_type() function to get the overall type among isFile, isRomdump, isDisk, isRaw adn isArc. This will be used by ext_option(f) 
     function get_type(ext, flfile) { //flfile set to true for "isFile" for DOS file
         var e = _exts[ext];
-        if (!e || ext == "???" || ext == "dat" || ext == "err") {
+        if (!e || ext == "???" || ext == "dat" || ext == "ere") {
             console.log(" ...get_type() has set file with extension '" + ext + "' to Raw file");
             return "isRaw";
         }
@@ -5476,16 +5495,28 @@
         }
     }
     //(PVB ADD) new save_as_xxx() function
+    function mod_ext(name, ne) { //function mod_ext() used to modify current file extension according to saving purpose
+        var xt = ""; //variable for current extension
+        if (name.substring(name.length - 4, name.length - 3) == ".")  {
+            xt = name.substring(name.length - 3, name.length); //get current ext
+            name = name.substring(0, name.length - 4); //remove ext
+        }
+        if ((ne == 'ATR' || ne == 'XFD') && (xt == 'ATR' || xt == 'XFD'))
+            return name + "." + ne; //change ATR from XFD and inversement
+        if (ne == 'MERGED') //filename-MERGED.XEX //force XEX extension if merged
+            return name + "-" + ne + ".XEX";
+        if (xt && !(xt == 'XEX' && ne == 'xex')) name += "_" + xt; //filename_"current extension" //put current extention in name
+        if (ne == 'EXTRACT') return name + "-" + ne;//filename_"original ext"-EXTRACT //put original ext in bracket
+        else return name + "." + (ne == '???' ? 'DAT' : ne.toUpperCase());; //filename-"original ext"."new EXT" //standard way of changing extension
+    }
     function save_as_new() { //[Download new file] saving button in case of new extension
-        var f = _shown;
-        save_bytes(f.name + "." + f.ext.toUpperCase(), f.data);
+        save_bytes(mod_ext(_shown.name, _shown.ext), _shown.data);
     }
     function save_as_extract(opt) { //Extract saving buttons in Extract menu
         var f = _shown;
-        var fe = "_extract.DAT";
+        var fe = ".DAT";
         if (!f.extractedData) return;
         var sa = f.type == "isDisk" ? f.extracted_disk.start_add : f.extracted_file.start_add;
-        //var ssz = f.atr ? f.atr.sector_size : 128;
         var data_to_save = f.extractedData;
         if (opt == 1) { // 1: Save extract to OBJ file (convert)
                 data_to_save = make_OBJ(data_to_save, sa);
@@ -5500,15 +5531,13 @@
             console.log("save_as_extract()==> make_ATR() file done! Start Addr: $" + hdx(sa));
         } //else (opt == 4) (or other case): do nothing on the data, save them as raw with extension "dat"
         //then now save bytes
-        save_bytes(f.name + fe, data_to_save);
+        save_bytes(mod_ext(f.name, "EXTRACT") + fe, data_to_save);
     }
     function save_as_dsk(ext) { //used by [Download ATR file], [Download XFD file], and [Download all valid files] buttons
         var f = _shown;
-        if (ext == "ATR")
-            save_bytes(f.name + ".ATR", f.atr.d);
-        if (ext == "XFD") {
-            var d = f.atr.d.slice(16);
-            save_bytes(f.name + ".XFD", d);
+        if (ext == "ATR" || ext == "XFD") {
+            var d = ext == "XFD" ? f.atr.d.slice(16) : f.atr.d; //if XFD then remove 16-bytes ATR header
+            save_bytes(mod_ext(f.name, ext), d);
         }
         if (ext == "ALL") { //Save (download) all the valid DOS files // Experimental because limited by the Browser and OS like windows
             var ct;
@@ -5531,15 +5560,15 @@
     }
     function save_as_cart() { //used by [Download new CART] button
         var f = _shown;
-        save_bytes(f.name + ".CAR", f.rom.romData);
+        save_bytes(mod_ext(f.name, "CAR"), f.rom.romData);
         /*if (f.rom.tmpData) save_bytes(f.name, f.rom.tmpData); //Saving the new bank map : See apply_rommap(id)*/
     }
     function save_wo_header() { //used by [Download raw ROM] button
         var f = _shown;
         var d = f.rom.romData.slice(16);
-        save_bytes(f.name + ".ROM", d);
+        save_bytes(mod_ext(f.name, "ROM"), d);
     }
-    function save_disassembly(h) { //used by /Save listing/ buttons
+    function save_disassembly(h) { //used by [Save listing] buttons
         var f = _shown;
         var s = "Atari 8-bit rom image file explorer - Listing";
         if (!h) { //request to save in txt format: _txt("#show") get the text (inner text) of the listing display in the html page
@@ -5579,28 +5608,28 @@
     function hdx(x) {
         return x.toString(16).toUpperCase();
     }
-    //(PVB MOD) improvement of get_xex_segs(): accept several 0xFFFF headers in same file, check segment validity and set error text in segs.err
+    //(PVB MOD) improvement of get_xex_segs(): accept several 0xFFFF headers in same file, check segment validity and set error text in segs.ers
     function get_xex_segs(a, i, len) {
         //(PVB COM) a = file data, i = 0 (index = offset from beginning of file data) //len = file size
         var segs = [];
         var segnum = 0; //(PVB ADD) segment counter
         var e = i + len; // e is the index of the last byte of the file (+1)
-        var err = ""; //(PVB ADD) segment error string
+        var ers = ""; //(PVB ADD) segment error string
         //(PVB MOD) put the variable declaration before code
         //(PVB COM) test the first 2 bytes
         if (le16(a, i) != 0xFFFF) //(PVB COM) header shall be 0xFFFF for Atari Executable files (COM, EXE, XEX)
-            return null; //(PVB COM) This is not an executable file - return !
-        //(PVB TODO) handle file without 0xFFFF header but with segments if it exists ?
-        if (le16(a, i+2) == 0xFFFF) { //(PVB COM) 2 following 0xFFFF header not allowed - return !
+            return null; //(PVB COM) This is not an executable file, so return !
+        //(PVB COM) 2 following 0xFFFF header at the beggining of a file is not allowed (it could be a file filled with $FF...), so return !
+        if (le16(a, i+2) == 0xFFFF) { 
             console.log("get_xex_segs() => 2 following 0xFFFF header are not allowed at beginning of executable file!");
             return null;
         }
         mainlp: while (i < e) {
             segnum ++; //increase the segment counter, it starts at 1
             while (le16(a, i) == 0xFFFF) { //(PVB COM) header 0xFFFF is okay.
-                //(PVB COM) 2 consecutive 0xFFFF header should not appear in executable file. If the file must be invalidated, uncomment code
+                //(PVB COM) 2 consecutive 0xFFFF header should not appear in executable file. If the file must be invalidated, uncomment following code
                 /*if (le16(a, i+2) == 0xFFFF) {
-                    err = "ERROR in segment header! (offset $" + hdx(i+2) + "): 2 consecutive $FFFF header found!";
+                    ers = "ERROR in segment header! (offset $" + hdx(i+2) + "): 2 consecutive $FFFF header found!";
                     break mainlp;
                 }*/
                 //(PVB ADD)(PVB MOD) 0xFFFF segments are stored in the 'segs' array, with the number 0xFFFF. Add the "segid" in the 'segs' array.
@@ -5610,8 +5639,8 @@
                 i += 2; // increase of 2
             }
             if ((e - i) < 4) {
-                err = "EOF ERROR in Segment #" + segnum + " definition! (offset $" + hdx(i) + "): not enough data to make a new header";
-                err += "\n;  (a header must have 4 bytes, and only " + (e-i) + " bytes left in file!)";
+                ers = "EOF ERROR in Segment #" + segnum + " definition! (offset $" + hdx(i) + "): not enough data to make a new header";
+                ers += "\n;  (a header must have 4 bytes, and only " + (e-i) + " bytes left in file!)";
                 break; //exit the while loop
             }
             // i is lower that e, this should be a valid segment
@@ -5627,13 +5656,13 @@
                     return null; //(PVB) first segment is not OK, we do nothing and return
                 }
                 else { //(PVB) in case of there are some segments found
-                    //(PVB) save this last not-OK segment with the segs.err error text and return
-                    err = "Code segment #" + segnum + " ERROR! $[" + hex(start,4) + ":" + hex(end,4) + "] (offset $" + hdx(i-4) + ")";
+                    //(PVB) save this last not-OK segment with the segs.ers error text and return
+                    ers = "Code segment #" + segnum + " ERROR! $[" + hex(start,4) + ":" + hex(end,4) + "] (offset $" + hdx(i-4) + ")";
                     if (slen < 1)
-                        err += ": segment start address is greater that end address!";
+                        ers += ": segment start address is greater that end address!";
                     if (i + slen > e) {
-                        err += ": $" + hdx(slen) + " bytes required, but only $" + hdx(e-i) +" bytes left in file!"
-                        err += "\n;  ($"+ hdx(i+slen - e) +" bytes are missing in file; expected file size should be $" + hdx(i+slen) + ")";
+                        ers += ": $" + hdx(slen) + " bytes required, but only $" + hdx(e-i) +" bytes left in file!"
+                        ers += "\n;  ($"+ hdx(i+slen - e) +" bytes are missing in file; expected file size should be $" + hdx(i+slen) + ")";
                     }
                     break;
                 }
@@ -5644,9 +5673,9 @@
             segs.push(seg); //push the seg in the segs table
             i += slen; // i is set for next segment
         } //end of while loop
-        if (err) { //if err then save the segment with the error string
-            segs.push({ segid:segnum, start: 0, end: 0, offset: i, len: 0, err: err });
-            console.log("get_xex_segs() => !" + err); //err contains the error description
+        if (ers) { //if ers then save the segment with the error string
+            segs.push({ segid:segnum, start: 0, end: 0, offset: i, len: 0, ers: ers });
+            console.log("get_xex_segs() => !" + ers); //ers contains the error description
         }
         return segs;
     }
@@ -5713,12 +5742,7 @@
             //(PVB COM) segs is an array of n seg (n = 0, 1, ...); Segments are count in "seg.segid", which is is set to $FFFF for header
             //(PVB COM) if segheader is true, there are headers in the "has_header" file type, ohterwise display a direct disassembling starting from "org"
             segheader = segs && (segs.length > 1); //(PVB COM) segheader is OK if segments found above the $FFFF header which is the first 
-            //(PVB WIP)//TODO// maybe do a better check of the header validity ?
-            //if (segheader) { //check validity of header because not checked when extension is forced
-            //    if (segs[0].segid == 0xFFFF)
-            //        if (segs[1] && segs[1].err) //first segment is faulty
-            //                segheader = false;
-            //}
+            //(PVB WIP)//TODO// maybe do a better check of the header validity ? need to check Atari Exe file Spec from DOS...
             if (!segheader) console.log("xex_dump()=> No segment found, this is not a standalone executable file!");
             else {
                 console.log("xex_dump()=> OK, " + segs.length + " segments found, this is a standalone executable file!");
@@ -5779,7 +5803,7 @@
                 if (stmp == 0xFFFF) { //(PVB) this is an header 
                     s="; Header 0xFFFF at file offset $" + hdx(seg.offset);  //(PVB ADD)
                 }
-                else if (!seg.err) { // this is not a header but a displayable segment of code
+                else if (!seg.ers) { // this is not a header but a displayable segment of code without error
                     s = "; Code <a id='BKTOSEG" + stmp + "' href='#FWTOSEG" + stmp + "'>segment \#" + stmp + "</a>";  // hyperlink to the segment disassembly
                     s += "  $[" + hex(seg.start, 4) + ":" + hex(seg.end, 4) + "]";
                     s += ", total $" + hdx(seg.len) + " (" + seg.len + ") bytes, at offset $" + hdx(seg.offset); //(PVB) ajout hexa $ et valeur
@@ -5801,7 +5825,7 @@
                 }
                 if (seg.note) s += seg.note;
                 if (s) lines.push(s);
-                if (seg.err) lines.push(';<span style="color:red;"> => ' + seg.err + '</span>'); //display the error if there is an error in segment
+                if (seg.ers) lines.push(';<span style="color:red;"> => ' + seg.ers + '</span>'); //display the error if there is an error in segment
             });
             lines.push('');
 
@@ -5809,7 +5833,7 @@
             var asms = {};
             console.log("xex_dump()=> Time for 1st PASS !");
             segs.forEach(seg => {
-                if (seg.segid != 0xFFFF && !seg.err) { //(PVB) if segment number is not the header, and not a faultly indisplayable segment
+                if (seg.segid != 0xFFFF && !seg.ers) { //(PVB) if segment number is not the header, and not a faultly not-displayable segment
                     console.log("xex_dump()=> DISASS 1st PASS of SEGMENT #" + seg.segid + " > " + hex(seg.start, 4) + ":" + hex(seg.end, 4));
                     asms[seg.segid] = disassemble(seg.start, a, seg.offset, seg.len, ram, flags);  // disassemble the segment with first pass
                 }
@@ -5817,18 +5841,17 @@
             console.log("xex_dump()=> Time for 2nd PASS !");
             // Complete the disassembly, second pass
             segs.forEach(seg => {
-                //lines.push(hr); //(PVB ADD) more char
                 //(PVB MOD) Adding the hyperlinks display
                 var stmp = seg.segid; //(PVB COM) segment display
-                if (seg.segid != 0xFFFF) { //&& !seg.err) { //(PVB COM) if segment number is not the header, and not a faultly indisplayable segment
+                if (seg.segid != 0xFFFF) { //&& !seg.ers) { //(PVB COM) if segment number is not the header, and not a faultly not-displayable segment
                     lines.push(_hr);
                     s = "<span id='FWTOSEG" + stmp + "'>; Code segment \#" + stmp + "<a href='#BKTOSEG" + stmp + "'>(back)</a></span>";  // hyperlink to the segement
                     s = s + ": $" + hdx(seg.len) + " (" + seg.len + ") bytes at $" + hex(seg.start, 4) + ":" + hex(seg.end, 4); // (PVB) hexa $ and value display
                     if (seg.note)
                         s += seg.note;
                     lines.push(s);
-                    if (seg.err)
-                        lines.push(';<span style="color:red;"> => ' + seg.err + '</span>');
+                    if (seg.ers)
+                        lines.push(';<span style="color:red;"> => ' + seg.ers + '</span>');
                     lines.push(_hr); //(PVB ADD) more char
                     lines.push('');
                     if (asms[seg.segid]) {
@@ -6200,7 +6223,6 @@
                 0x10 > Erased (not is use);   0x20 > entry is a (sub)directory
                 0x40 > (res. Sparta 4.49e);   0x80 > entry open for writing */
                 /*previously// var flags = (dir[i] & 0x04) ? 0 : 0x42;*/ //convert flags to standard DOS ?
-                //var flags = isMain ? 0x20 : dir[i];
                 var flags = dir[i];
                 /*previously//if (dir[i] & 1) flags |= 0x20;  // locked*/ //convert flags to standard DOS ?
                 var f = {
@@ -6226,7 +6248,7 @@
                     //(PVB ADD) Adding the deleted file handling
                 if (flags & 0x10) {
                     f.valid = 1;
-                    f.err = "==>SpartaDOS deleted file ($10 flag)";
+                    f.erf = "==>SpartaDOS deleted file ($10 flag)";
                 }
                 else {
                     this.file_info[f.start] = f; // we know the length
@@ -6381,8 +6403,7 @@
                     files.push(dir_info);
                     continue;
                 }
-                // 0x01 > Subdirectory;      0x02 > Protected;    0x04 > Open for Writting; 
-                // 0x40 > File exists;       0x80 > File deleted
+                //FLAGS ARE: 0x01 > Subdirectory; 0x02 > Protected; 0x04 > Open for Writting; 0x40 > File exists; 0x80 > File deleted
                 var flags = dbuffer[i]; //the first byte
                 if (flags == 0) break; //no more file, so exit !
                 var f = {
@@ -6413,7 +6434,7 @@
 
                 if (flags & 0x80) {
                     f.flags &= 0x80; //protection in case of wrong flag, priority to "delete" bit 
-                    f.err = "==>DOS XE deleted file ($80 flag)"; //valid or not valid? will depend on sector chain below
+                    f.erf = "==>DOS XE deleted file ($80 flag)"; //valid or not valid? will depend on sector chain below
                 }
                 
                 if (f.is_dir) { // recurse get_dir if a file is a subdirectory
@@ -6444,7 +6465,7 @@
                     }
                     if (efm) {
                         console.log(`DOS XE => Directory #${f.numidf} (id#${f.dfnbr}) ${f.name} a wrong cluster value has been found!`);
-                        f.err = "==>DOS XE wrong cluster value found, file is corrupted!";
+                        f.erf = "==>DOS XE wrong cluster value found, file is corrupted!";
                         f.valid = 1;
                     }
                 }
@@ -6682,8 +6703,8 @@
                 total: d[j +1], //$01 Total number of block for the file
                 bflen: d[j +2], //$02 offset of the last byte of data contained in the last sector of the file // no use of fsize as for DOS3
                 name83: toAscii(d, j +5, 11), // Byte 5-12 : 11 char = 8 character filename padded with spaces at end + 3 character filename extension padded with spaces at end
-                name: toAscii(d, j +5, 8).trim(), // Byte 5-12 : 8 character filename padded with spaces at end
-                ext: toAscii(d, j +13, 3).trim(), // Byte 13-15 : 3 character filename extension padded with spaces at end
+                name: toAscii(d, j +5, 8).trim(), // Byte 5-12 : 8 character filename without spaces
+                ext: toAscii(d, j +13, 3).trim(), // Byte 13-15 : 3 character filename without spaces
                 startbloc: d[j +3] //$03 byte number in the VTOC where the information about the file's location on the diskette begins, increased by eight (for direct VTOC access)
                 };
                 dirEntry.start = this.alloc_unit_sector(dirEntry.startbloc - 8); //Compute start sector = file start sector taken from first sector AU block the DOS4 file
@@ -6706,8 +6727,8 @@
             //(PVB MOD & ADD) Improvement of DOS file detection and validation
             dirEntry.valid = 2; //1 is valid (readable) and to be listed with error, 0 is not valid, 2 is OK fully valid (no error)
             //following 2 conditions to check are the minimum to get a file from the dir entry: a valid name & a consistant start sector
-            var title = (tdos != 3) ? d.slice(j +5, j +16) : d.slice(j +1, j +12); //name in Atacii
-            var isName = isAtariNameChar(title, this.dosType == 7); //is that name is valid with atari char text ?
+            var title = (tdos != 3) ? d.slice(j +5, j +16) : d.slice(j +1, j +12); //name in an Ascii byte array
+            var isName = isAtariNameChar(title, this.dosType >= 7); //is that name is valid with atari char text ?
             if (is_zero(d, j, 16)) {
                 dirEntry.valid = 0;
                 if (idf < m) //(PVB CONSOLE HINT)
@@ -6726,9 +6747,16 @@
             if (!dirEntry.valid) return [];
             //dir.total is checked below while reading sectors of the file
             //here filename is valid start sector is OK
-            dirEntry.err = ''; // text of error in case of
+            dirEntry.gname83 = ''; //original filename, eventually with inverted char (not DOSx compatible)
+            title.forEach(c => dirEntry.gname83 += String.fromCharCode(c)); //original filename is set from 'title'
+            dirEntry.erf = ''; // text of error in case of
+            if (isName < 0) {
+                dirEntry.erf += " >not genuine DOSx filename with special char!";
+                if (idf < m) //(PVB CONSOLE HINT)
+                    console.log(" one_dir() =>Warning! File#" + idf + " '" + dirEntry.name + "'" + dirEntry.erf); //(PVB CONSOLE HINT)
+            }
             if (d[j] == 0x80) { //$80 byte flag is deleted, as per DOS1, DOS2, DOS3 and DOS4
-                dirEntry.err += " >deleted file ($80 flag)"
+                dirEntry.erf += " >deleted file ($80 flag)"
                 if (idf < m) //(PVB CONSOLE HINT)
                     console.log(" one_dir() =>Info: File#" + idf + ": " + dirEntry.name + " is a deleted file that could be wrong!"); //(PVB CONSOLE HINT)
             }
@@ -6744,12 +6772,12 @@
             else { //standard file, not deleted
                 if (tdos == 3 && !(d[j] & 0xC0)) { //$C0 is the valid flag for DOS3
                     dirEntry.valid = 1; //readable, but wrong ?
-                    dirEntry.err += " >DOS3 dir entry not valid (no $0C flag)!"
+                    dirEntry.erf += " >DOS3 dir entry not valid (no $0C flag)!"
                     if (idf < m) //(PVB CONSOLE HINT)
                         console.log(" one_dir() =>Error! File#" + idf + ": " + dirEntry.name + " (DOS3) is not existing (no 0xC0 flag)!"); //(PVB CONSOLE HINT)
                 }
                 if ((d[j] & 0x41) == 0x41) { //$41 means not deleted and Open, applies to DOS2x, DOS3, DOS4 & MysDOS
-                     dirEntry.err += " >non-closed file (open-for-writing flag)!";
+                     dirEntry.erf += " >non-closed file (open-for-writing flag)!";
                     if (idf < m) //(PVB CONSOLE HINT)
                         console.log(" one_dir() =>Info: File#" + idf + ": " + dirEntry.name + " is a non-closed file that is open for writing, so may be wrong!"); //(PVB CONSOLE HINT)
                 }
@@ -6757,9 +6785,9 @@
             if (!dirEntry.valid) return dirEntry; //returns an empty dirEntry if non valid
             // get all sectors associated with this entry & check validity
             dirEntry.sectors = []; //initialisation of the DOS file sector table
-            var num = -1; //initialisation of the file number index
-            var next = -1; //initialisation of next sector
-            var len = -1; //initialisation of bytes per sector
+            var num = -1; //init of the file number index
+            var next = -1; //init of next sector
+            var len = -1; //init of bytes per sector
             var sector = 0;
             var nextbloc = -1;
             if (tdos != 3 && tdos != 4) { //for standard DOS (not DOS3) (nota for MyDOS, tdos is 6, 7 or 8)
@@ -6784,14 +6812,17 @@
                                 //(PVB TODO) add information according to conditions
                                 if (dirEntry.flags == 0x80 && k == 0) {
                                     dirEntry.valid = 1;
-                                    if (dirEntry.dir_name) break; //exit Loop if the deleted file is in a MyDOS subdirectory, because this check does not work
-                                    dirEntry.err += " >file overwritten by file #" + num +" >file unrecovarable!";
-                                    console.log(" one_dir() =>Error! File#" + idf + ": DOS2x/MyDOS " + dirEntry.name + " has been overwritten by file #" + num + " in sector " + sector +"!");
+                                    if (dirEntry.dir_name) //exit Loop if the deleted file is in a MyDOS subdirectory, because the overwritting check does not work
+                                        console.log(" one_dir() =>Deleted MyDOS subdirectory file#" + idf + " is not valid!");
+                                    else { //not in a subdirectory, so the overwritting check can be done
+                                        dirEntry.erf += " >file overwritten by file #" + num +" >file unrecovarable!";
+                                        console.log(" one_dir() =>Error! File#" + idf + ": DOS2x/MyDOS " + dirEntry.name + " has been overwritten by file #" + num + " in sector " + sector +"!");
+                                    }
                                     break; //exit loop
                                 }
                                 else {
                                     dirEntry.valid = 1;
-                                    dirEntry.err += " >wrong file id in FMS byte at sect." + sector +" >" + k + " sect. read >file corrupted!";
+                                    dirEntry.erf += " >wrong file id in FMS byte at sect." + sector +" >" + k + " sect. read >file corrupted!";
                                     console.log(" one_dir() =>Error! File#" + idf + ": DOS2x/MyDOS " + dirEntry.name + " has wrong file number #" + num + " in sector " + sector +" after " + k + " sectors!");
                                     break; //exit loop
                                 }
@@ -6803,25 +6834,25 @@
                             // (not end sector and length of data to read is = (sector size - 3))
                             if (!is_good_len) {
                                 dirEntry.valid = 1;
-                                dirEntry.err += " >wrong length in FMS byte at sect." + sector + " >file corrupted!";
+                                dirEntry.erf += " >wrong length in FMS byte at sect." + sector + " >file corrupted!";
                                 console.log(" one_dir() =>Error! File#" + idf + ": DOS2x/MyDOS " + dirEntry.name + " has wrong byte_length (" + len + ") in sector " + sector +"!");
                                 break; //exit loop
                             }
                         }
-                        else { //else if (tdos == 1) //(PVB TO DO) count the file sector in len if z set
+                        else { //else if (tdos == 1) //(PVB TODO) count the file sector in len if z set
                             if (len & 0x80) { //check Z : if set, it is the last sector of DOS1 file
                                 if (next) {
                                     dirEntry.valid = 1;
-                                    dirEntry.err += " >DOS1 Z bit set in the FMS byte!";
+                                    dirEntry.erf += " >DOS1 Z bit set in the FMS byte!";
                                     console.log(" one_dir() =>Error! File#" + idf + ": DOS1 " + dirEntry.name + " has Z bit set in last sector " + sector +"!");
                                     break; //exit loop
                                 }
                             }
-                            else { //if Z clear, we are not in the last sector of DOS1 file (PVB TO DO) : count the file sector in len...
+                            else { //if Z clear, we are not in the last sector of DOS1 file (PVB TODO) : count the file sector in len...
                                 len = this.sector_size - 3; //that is $7F
                                 if (!next) {
                                     dirEntry.valid = 1;
-                                    dirEntry.err += " >DOS1 Z bit cleared in FMS byte!";
+                                    dirEntry.erf += " >DOS1 Z bit cleared in FMS byte!";
                                     console.log(" one_dir() =>Error! File#" + idf + ": DOS1 " + dirEntry.name + " has Z clear and no next sector in sector " + sector +"!");
                                     break; //exit loop
                                 }
@@ -6831,7 +6862,7 @@
                         if (next > this.sector_count) {
                             //next is above last sector of disk
                             dirEntry.valid = 1;
-                            dirEntry.err += " >wrong next sector in FMS bytes at sect." + sector + " >file corrupted!";
+                            dirEntry.erf += " >wrong next sector in FMS bytes at sect." + sector + " >file corrupted!";
                             console.log(" one_dir() =>Error ! File#" + idf + ": DOS2x/MyDOS " + dirEntry.name + " has wrong next_sector (" + next + ") in sector " + sector +"!");
                             break; //exit loop
                         }
@@ -6847,7 +6878,7 @@
                         if (next == 0) { // check real end of file
                             if (k != dirEntry.total - 1) { // EndOfFile reached before the end of total sector get from the file VTOC directory
                                 dirEntry.valid = 1;
-                                dirEntry.err += " >no FMS next sector at sect." + sector + " & total to read not reached >file corrupted!";
+                                dirEntry.erf += " >no FMS next sector at sect." + sector + " & total to read not reached >file corrupted!";
                                 console.log(" one_dir() =>Error! File#" + idf + ": DOS2x " + dirEntry.name + " is truncated: next sector after " + sector + " is zero!");
                             }
                             break;  //exit loop // EOF?
@@ -6884,7 +6915,7 @@
                             derr = " >No remaining block to read and EOF byte not reached >file corrupted! at file block #" + k;
                         }
                         if(derr) {
-                            dirEntry.err += derr;
+                            dirEntry.erf += derr;
                             dirEntry.valid = 1;
                             console.log(" one_dir() =>File#" + idf + ": DOS3 " + dirEntry.name + " has" + derr);
                             break; //exit loop
@@ -6917,7 +6948,7 @@
                 if (!dirEntry.fsize) {
                     console.log(" one_dir() =>File#" + idf + ": DOS4 " + dirEntry.name + " is not a valid file as zero byte length!");
                 }
-                else { //WIPDOS// TODO // Check the file corruption as for DOS3 above
+                else {
                     console.log(" one_dir() =>File#" + idf + ": DOS4 '" + dirEntry.name + "' reading sectors...");
                     var nls = this.blockSect - 1;
                     var fNbrSect = 1; //number of sector for the file, starting at 1
@@ -6937,7 +6968,7 @@
                             derr = " >No remaining block to read and EOF byte not reached >file corrupted! at file block #" + k;
                         }
                         if(derr) {
-                            dirEntry.err += derr;
+                            dirEntry.erf += derr;
                             dirEntry.valid = 1;
                             console.log(" one_dir() =>File#" + idf + ": DOS4 " + dirEntry.name + " has" + derr);
                             break; //exit loop
@@ -7029,7 +7060,7 @@
                     console.log("get_dir() => No DOS3/DOS4 directory entry found!");
                 }
             }
-            else if (this.dosType > 0 || this.dosType == -1) { //(PVB COM) not for DOS3
+            else if (this.dosType > 0 || this.dosType == -1) { //(PVB COM) for not DOS3 nor DOS4
                 console.log("get_dir() => Retreiving DOS1, DOS2x or MyDOS disk directory at 361-368...");
                 dirs = this.get_dir_range(361, 369); //369 not included
                 if (dirs.length < 1 && this.dosType < 8) { //(PVB MOD) Not for MyDOS4.5x HD disk
@@ -7053,9 +7084,8 @@
         scan_files(dirs) { //scan_files() is called by get_dir(), only for DOS2x and MyDOS system
             var d = this.d;
             var sSectors = [];
-            //(PVB TODO) check the previous utility of "used" ?
-            /*var used = [];
-            dirs.forEach(dir => dir.sectors.forEach(s => used[s] = dir)); //last directory entry
+            //(PVB TODO) check the previous utility of "used" ? in the original TOOL //WIP may be make a map of the disk used ?
+            /*var used = []; dirs.forEach(dir => dir.sectors.forEach(s => used[s] = dir)); //last directory entry
             dirs.forEach(dir => used[dir.start] = dir); //record each dir entry in an array with its start sector as index */
             var files = [];
             for (var i = 4; i <= this.sector_count ; i++) { //map the sector of the disk
@@ -7220,7 +7250,7 @@
                 this.vtoc_off = this.sector_offset(this.vtoc1_sect); //data for the DosXE constructor,
                 idos = 5;
                 console.log(" identify_dos() => has found a DOS XE disk image system");
-                return idos; //DOS XDE
+                return idos; //DOS XE is 5
             }
             //====== Check for MyDOS...======// 
             var vtocSect = this.read_sector(360); //read VTOC and it's data at default sector 360 ($168) for most every DOS
@@ -7258,7 +7288,7 @@
                 if (this.sector_size == 256 && vtocb > 3) this.vtoc2_sect = 360 - vtocb + 3; //formula to be validated
                 if (this.sector_size == 128 && vtocb > 2) this.vtoc2_sect = 360 - (vtocb * 2) + 5; //formula to be validated
                 console.log(" identify_dos() => has found a MyDOS disk image system");
-                return idos;
+                return idos; //MyDOS is 6, 7 or 8
             }
             //====== Check for DOS 1& DOS 2x... ======//
              //(PVB TODO) better DOS2x detection, support DOS loaders (with special boot), and valid DOS by loading the first one_dir ??
@@ -7270,17 +7300,17 @@
                 this.file_start = 2;
                 idos = 1; //DOS 1 (SD only)
             }
-            else if (vtocb == 0x02 && t == 0x2C3 && vts) { //seems to be a DOS2.O disk, so check vtocb, bc & sasa
+            else if (vtocb == 0x02 && (t == 0x2BF || t == 0x2C3) && vts) { //seems to be a DOS2.O disk, so check vtocb, bc & sasa
                 if (sc == 1040) str += " >720-sector DOS 2.0 disk on a 1040-sector ED disk";
                 if (sc == 720 && bc && bintadd == 0x1540 && sasa == 0x19CC) idos = 2.5; //DOS2.5 on a 720-sector (SD) disk
                 else if (bc && bintadd == 0x1540 && sasa == 0x1A7C) idos = 2; //DOS2.0S (SD) or DOS2.0D (DD & SD)
-                else {
+                else { //note: t == $2BF formated sectors have been found on some modified DOS2 loader disks ==> TODO: check this
                     str += (str ? "\n;" : "") + " INFO: This is not a genuine SD DOS 2.0S disk or DD DOS 2.0D disk";
                     idos = 2; //DOS2.0 based disk
                 }
             }
             else if (vtocb == 0x02 && (t == 0x3F2 || t == 0x3F3 || t == 0x3E9) && vts) { //seems to be a DOS2.5 disk
-                //note: $3F3 and $3E9 formated sectors has been found on some modified DOS2.5 loader disks ==> TODO: check this
+                //note: $3F3 and $3E9 formated sectors have been found on some modified DOS2.5 loader disks ==> TODO: check this
                 if (sc == 1040) {
                     s = s + le16(this.d, (this.sector_offset(1024) + 0x7A)); //compute free sector number
                     this.vtoc2_sect = 1024;
@@ -7303,7 +7333,7 @@
                     str += (str ? "\n" : "") + " >Error in DOS 2x TOC that must end with $00 value bytes"; //info
                 if (str) this.dirErrorStr = str;
                 console.log(" identify_dos() => has found a DOS1/2/2x disk image system");
-                return idos;
+                return idos; //DOS 1 is 1, DOS 2 is 2, DOS2.5 is 2.5
             }
             //====== Check for DOS 3... ======//
             //Directory must start with 14x $00 value bytes, contain $A5 signature, and has the total-of-block byte
@@ -7326,7 +7356,7 @@
                 this.blockSect = 8;
                 idos = 3;
                 console.log(" identify_dos() => has found a DOS 3 disk image system");
-                return idos; //DOS 3
+                return idos; //DOS 3 is 3
             }
             //====== Check for DOS 4... ======//
             //Directory must start with 14x $00 value bytes, contain $A5 signature, and has the total-of-block byte
@@ -7358,7 +7388,7 @@
                 this.file_start = 1; //WIPDOS// to be confirmed that a DOS4 file can start in the boot sectors !!
                 if (str) this.dirErrorStr = str;
                 console.log(" identify_dos() => has found a DOS 4 disk image system");
-                return idos; //DOS 4
+                return idos; //DOS 4 is 4
             }
             //====== Check for KBoot ... ======//
             const kboot = [0, 3, 0, 7, 0x14, 7, 0xA0, 0, 0xA9, 0x6B, 0x91, 0x58, 0x20, 0xD9, 7]; //some KBoot signature
@@ -7373,14 +7403,14 @@
                 this.file_start = 4;
                 idos = 10;
                 console.log(" identify_dos() => has found a KBOOT disk image system");
-                return idos;
+                return idos; //KBOOT is 10
             }
             //======= NO KNOWN DOS FOUND ======//
             this.dirErrorStr = " >VTOC error: unknown DOS system or disk image file has a boot loader!";
             this.vtoc1_sect = 0;
             this.dir_sector = 0;
             console.log(" identify_dos() => has not found any known DOS disk image system!");
-            return idos; //no DOS found
+            return idos; //no DOS found, idos is -1
         }
         //(PVB END OF ADD)
     }
@@ -7455,7 +7485,7 @@
             if (BArcType != 0xF9 && BArcType != 0xFA) return false;
 		    BPassInfo = srcDCM[idx++];
             //BPassInfo= Pass number: A sequence number assigned to each pass.  Normally ranging from 1 to 31 decimal.
-            // This might roll over to zero after 31. End of pass: The value hex 45.
+            //This might roll over to zero after 31. End of pass: The value hex 45.
             console.log(">>> extract_dcm() >>Entering pass number #" + (BPassInfo & 0x1F) + "...");
 		    let BSctrLow = srcDCM[idx++];
 		    let BSctrHigh = srcDCM[idx++];
@@ -7491,40 +7521,40 @@
                 //Compression type: One of the following hex values: 41, 42, 43, 44, 46 or 47.
                 switch(contentType & 0x7F) {
                     case 0x41: //65 //modify begin
-                        c = srcDCM[idx++]; //stream.Read(&c, 1);
-                        readSource(c + 1, 0); //stream.Read(sectorBuffer, c + 1);
-                        swapBuffer(c); // for(uint32 i=0, j=c; i < j; ++i, --j) {std::swap(sectorBuffer[i], sectorBuffer[j]);}
+                        c = srcDCM[idx++];
+                        readSource(c + 1, 0);
+                        swapBuffer(c);
                         break;
                     case 0x42: //66 //128 byte DOS sector
-                        readSource(5, 123); //stream.Read(sectorBuffer + 123, 5);
-                        sectorBuffer.fill(sectorBuffer[123], 0, 123); //memset(sectorBuffer, sectorBuffer[123], 123); //memset(pointer, value, number of times)
+                        readSource(5, 123);
+                        sectorBuffer.fill(sectorBuffer[123], 0, 123);
                         break;
                     case 0x43: //67 //compressed sector
-                        let pos = 0; //uint32 pos = 0;
-                        let offset; //uint8 offset;
+                        let pos = 0;
+                        let offset;
                         let bcompressed = false;
                         let bfirst = true;
                         while(pos < DCMSectorSize) {
-                            offset = srcDCM[idx++]; //stream.Read(&offset, 1);
+                            offset = srcDCM[idx++];
                             // offset cannot exceed sectorSize, ever.
                             if (offset > DCMSectorSize) {
                                 console.log(">>> extract_dcm() !ERROR: Offset " + offset + " greater than sectorsize!!");
-                                return false;//throw ATInvalidDiskFormatException(origPath);
+                                return false;
                             }
                             // offset cannot go backwards, except in two specific cases:
                             //  - offset is 0, pos is 0 (null span)
                             //  - offset is 0, sectorSize is 256 (fill to end of DD sector)
                             if (offset < pos && (offset || (pos && DCMSectorSize != 256))) {
                                 console.log(">>> extract_dcm() !ERROR: Backwards offset " + offset + " encountered!!");
-                                return false //throw ATInvalidDiskFormatException(origPath);
+                                return false
                             }
                             let spanLen = (offset || bfirst ? offset : DCMSectorSize) - pos;
                             if (bcompressed) {
-                                c = srcDCM[idx++]; //stream.Read(&c, 1);
-                                sectorBuffer.fill(c, pos, pos + spanLen); //memset(sectorBuffer + pos, c, spanLen); //memset(pointer, value, number of times)
+                                c = srcDCM[idx++];
+                                sectorBuffer.fill(c, pos, pos + spanLen);
                             }
                             else if (spanLen) {
-                                readSource(spanLen, pos);//stream.Read(sectorBuffer + pos, spanLen);
+                                readSource(spanLen, pos);
                             }
                             pos += spanLen;
                             bcompressed = !bcompressed;
@@ -7532,23 +7562,23 @@
                         }
                         break;
                     case 0x44:		// 68 // modify end
-                        c = srcDCM[idx++];//stream.Read(&c, 1);
+                        c = srcDCM[idx++];
                         if (c >= DCMsectorSize) {
                             console.log(">>> extract_dcm() !ERROR: at code 0x44, read byte " + c + " is greater than sectorsize!!");
-                            return false; //throw ATInvalidDiskFormatException(origPath);
+                            return false;
                         }
-                        readSource(DCMsectorSize - c, c);//stream.Read(sectorBuffer + c, sectorSize - c);
+                        readSource(DCMsectorSize - c, c);
                         break;
                     case 0x46:		// 70 // repeat last sector
                         break;
                     case 0x47:		// 71 //uncompressed sector
-                        readSource(DCMSectorSize, 0);//stream.Read(sectorBuffer, sectorSize);
+                        readSource(DCMSectorSize, 0);
                         break;
                     default:
                         console.log(">>> extract_dcm() !ERROR: byte $" + hdx(contentType) + " is not a supported DCM command!!");
-                        return false; //throw ATInvalidDiskFormatException(origPath);
+                        return false;
                     }
-                // create entry for sector
+                //create entry for sector
                 //storeBuffer(sctr_nbr) in the disk image
                 let sof = sectorIndex(sectorNbr, DCMSectorSize);
                 let ssz = sectorNbr < 4 ? 128 : DCMSectorSize;
@@ -7557,14 +7587,12 @@
                 }
                 // increment sector number if sequential flag is set, else read new sector number
                 if (contentType & 0x80) {
-                    ++sectorNbr//++sectorNum;
+                    ++sectorNbr
                 }
                 else {
                     BSctrLow= srcDCM[idx++];
                     BSctrHigh= srcDCM[idx++];
-                    //uint8 newSec[2];
-                    //stream.Read(newSec, 2);
-                    sectorNbr = BSctrHigh * 256 + BSctrLow; //sectorNum = VDReadUnalignedLEU16(newSec);
+                    sectorNbr = BSctrHigh * 256 + BSctrLow;
                 }
             }
             //exit main loop
@@ -8022,9 +8050,6 @@
         else if (ts == 1440) {
             // 2*720 = 1440 sectors => Density 256 B/sect, ATARI XF551 drive => for DOSXE, compatible with MyDOS (?), Sparta
             density = "Double Sided Double Density DSDD";
-            //(PVB TODO) Support DOS XE...
-            //if (!atr.dosType != 6) //(PVB TODO) 6 was for MyDOS => update if condition is for DOS XE
-            //    formatStrError += "; Disk is a 1440 sectors DOS disk that can also be a DOS XE disk - not supported yet";
         }
         else if (ts > 1440 && atr.dosType == 8) { //(PVB MOD) MyDOS4.5x
             density = "MyDOS4.5x HD disk format";
@@ -8147,7 +8172,7 @@
         if (f.dosdir && f.dosdir.length) { //OK, there is a Directory and Atari files, list them
             if (sparta) //no "save all files" for sparta, there is no use of such possibility
                 txt.push(`; The following SpartaDOS files has been found in the <i>"${atr.name}"</i> disk image`);
-            else { //not a sparata, there is a Directory, and Atari files
+            else { //not a sparta, and there is a Directory, and Atari files
                 if (atr.dosType < 4) //add [save all valid files] only for DOS1 to DOS3 (small disk with few files)
                     var btmp = `<button style="float:right" type="button" title="=extract all the files from disk image (use with care)" onclick="save_as_dsk('ALL')">Download all valid files</button>`;
                 txt.push(`; <i>"${atr.name}"</i> has a directory with the following DOS files: ${btmp}`);
@@ -8166,9 +8191,8 @@
             txt.push("; FileId Flag Name          StartSector NbrBlocks   FileSize bytes  Info");
             //        ; #1     $80  12345678.123  $000(0000)  $000(0000)  $12345(123456)  xxxx
             dirs = f.dosdir;
-            //previously// dirs.forEach(dir => dir.sectors.forEach(s => { sectors[s.sector] = { dir: dir, sector: s } }));
             //(PVB END OF ADD)
-            //(PVB MOD) add the directory listing
+            //(PVB MOD) add the directory listing //previously// dirs.forEach(dir => dir.sectors.forEach(s => { sectors[s.sector] = { dir: dir, sector: s } }));
             dirs.forEach(fe => { //for each file entry from the dos directory
                 var dt = "";
                 var isdir = fe.is_dir ? true : false;
@@ -8218,7 +8242,7 @@
                 strList += (" $"+ hex(fe.start,3) + pad_dir((" (" + fe.start + ")"), 7)); //start sector
                 strList += (" $"+ hex(fe.total,3) + pad_dir((" (" + fe.total + ")"), 7)); //total blocks
                 strList += (" $"+ hex(fe.fsize,5) + pad_dir((" (" + fe.fsize + ")"), 9)); //file size
-                if (fe.err) strList += fe.err; else strList += dt;
+                if (fe.erf) strList += fe.erf; else strList += dt;
                 if ((atr.isDosXE || sparta) && fe.numidf == 0) strList += "[ROOT MAIN DIRECTORY]"; //first entry for SpartaDOS or DOS XE is MAIN
                 else { //if not Sparta nor DOS XE first entry"
                     if (isdir) strList += "[DIR]";  // show "DIR" text if isdir
@@ -8406,7 +8430,7 @@
     }
     //(PVB END OF ADD)
 
-    //(PVB MOD) improvement of the show(id) function
+    //(PVB MOD) improvement of the show(id) function - show(id) is called by refresh() function (refresh() = show(_shown.id))
     function show(id) { //(PVB COM) show(id) is call on click event on file canva container to display the file on page right
         //id is the number of file in the container files, last available value is in the global variable _id
         //show(id) is also use the re-display the same file when clicking on tools (E extract, H Hexdump...) and buttons
@@ -8419,6 +8443,7 @@
                     reset_ext(); //if changed type in the previous file, cancel it (same as click on Reset Type button)
                     reset_hexdump(); //if hexdump display in previous file, cancel it
                     if (_shown.extract) reset_extract(); //same as click on Cancel Extract button
+                    cancel_search(); //cancel search in progress if changing of file
                     update_a5200eq_option(f); //(PVB ADD) update the A5200 equates disassembly option in menu
                     console.log("show(id) => we have changed to another file !");
                 }
@@ -8430,7 +8455,7 @@
                 f = get_file(++id);
                 console.log("show(id) => Get next id: " + id + ", Name: '" + f.name + "', file type: " + f.type); //(PVB CONSOLE HINT)
             }
-            if (f.data.length == 0){ //(PVB MOD) we should only consider "Modify it"
+            if (f.data.length == 0){ //(PVB MOD) we should only consider "Modify it" //data.length is still 0 after conversion into XFD/ATR disk
                 f.ext = '???';
                 f.empty = true; //display the empty file with a warning
             }
@@ -8475,7 +8500,6 @@
                 return;
             }
             //(PVB ADD) ROM Dump
-            //if (e && e.is_romdump){
             //Warning f.type is not set after changing an extension type, so a RomDump will still be a romdump, even if extension is changed
             if (f.type == "isRomdump") {
                 if (f.extract_menu_request) {
@@ -8487,7 +8511,6 @@
                     return;
                 } //else ROM is displayed as DAT as below
             }
-            //if (e && e.is_disk) {
             //Warning f.type is not set after changing an extension type, so an isDisk will still be an is Disk, even if extension is changed
             if (f.type == "isDisk") { //for the atari disk like XFD, ATR...
                 if (ntype != "isRaw") {
@@ -8517,8 +8540,8 @@
             }
             //(PVB COM) here we have a special file like "???" or "DAT", so display an Hex Dump of the file
             if(f.empty) {
-                var str = "; ERROR, nothing to show! the selected file: \n; '" + f.name + "' is empty !";
-                str += "\n; =>You should consider to modify it by the [M] tool...";
+                var str = "; ERROR, nothing to show! the selected '" + f.name + "' file is empty !";
+                str += "\n; =>You should consider to modify it by the [M] tool, or convert it into an XFD/ATR disk image...";
                 _h('#show', '<span style="color:red;">' + str + '</span');
                 return;
             }
@@ -8549,7 +8572,6 @@
             if (((e == 'atr' || e == 'xfd' || e == 'pro' || e == 'atx' || e == 'dsk' || e == 'dcm') && !_shown.atr) 
                 || ((e == 'bin' || e == 'a52' || e == 'car' || e == 'rom') && !_shown.rom)) { //conversion from isFile to isDisk or isRomdump
                 console.log("show_as() => An isDisk or isRomdump type extension is requested... so make a file and open it!");
-                //_filext = _shown.ext; //save the ext //_bNewDisk = true;
                 //curext is set to the previous current extension in order to tell load_data() that we need to open a new file
                 load_data(_shown.name + "." + e.toUpperCase(), _shown.data, "", _shown.ext) //load_data(name, a, imgTag, curext)
                 refresh_containers();
@@ -8562,11 +8584,12 @@
             _shown.ext = e; //change file type extension
             reset_hexdump(); //cancel Hex Dump display
             extract_reset(); //cancel Extract display
+            //note: cancel_search() is not called, allowing to explore type like GR7, GR8, PIC, FNT... keeping the offset and search menu display 
             refresh(); // select one // Go for redisplaying the new file type and update buttons
         }
     }
-    //(PVB ADD) the reset_ext() function
-    function create_atr() {
+    //(PVB ADD) the create_atr() function
+    function create_atr() { //called by the [Create XFD/ATR disk] button when a DAT file is displayed
         load_data(_shown.name, _shown.data, "", "forceATR") //load_data(name, a, imgTag, curext)
         refresh_containers();
     }
@@ -8589,10 +8612,6 @@
     }
     //(PVB ADD) toggle_hex() is used to force display of the file hex dump
     function toggle_hex() { //called by HTML event: onclick "H" tool
-        /*//previously//
-        if (!_shown) return;
-        if (_shown.ext == "dat") show_as(_shown.original_ext);
-        else show_as("dat");*/
         if (!_shown.forceHexDump === undefined)
             _shown.forceHexDump = 1; //invert flag
         else
@@ -8625,7 +8644,7 @@
         refresh(); //then re-display the file in the "main" HTML page
     }
     //(PVB ADD) cancel_search() is used to cancel all search
-    function cancel_search(){
+    function cancel_search(){ //called by reset_type_button() and toggle_search() functions
         if (_shown.isSearchable && _shown.searchrequest) { //a search is in progress, so cancel it
             delete _shown.searchrequest;
             _shown.data = _shown.dataOld;
@@ -8658,16 +8677,17 @@
                 break;
             }
         }
-        //previously// render_state(_containers); //instead of// refresh_containers();//PVB COM) it's better to comme back to first file when other file is cancelled
-        refresh_containers(true); //(PVB ADD) set to true in case of _containers closing to refresh properly displayed file
+        if (_bHexEd) display_HexEditor(false); //cancel/close the Hex Editor window frame if active
+        //previously// render_state(_containers); //instead of// refresh_containers();//PVB COM) it's better to come back to first file when other file is cancelled
+        refresh_containers(true); //(PVB ADD) set to true in case of _containers closing to refresh properly displayed files
     }
 
     //===================================================================================================
     //(PVB MOD) improvement of load_one(): handle ROM file, display of size in KB or B
     function load_one(name, ext, a, imgTag, gt, curext) { //(PVB COM) load_one() is called by load_data() when the disk image file is not a disk with several DOS files
-        //(PVB ADD) handling the ROM case with the ROM constructor; 'curext' if the the file was already displayed with another extension
+        //(PVB ADD) handling the ROM case with the ROM constructor; "curext" if the file was already displayed with another extension; "gt" is the file type
         var nr;
-        console.log("load_one() loads " + name + " that is a '" + gt + "' file type into the container"); //(PVB HINT)
+        console.log("load_one() loads " + name + " that is a '" + gt + "' file type into the container (previous 'ext' was '" + curext + "')"); //(PVB HINT)
         if (gt == "isRomdump") {
             nr = new ROM(a, name);
         }
@@ -8682,11 +8702,12 @@
         }
         //(PVB MOD) //Previously // var f = { name: name, ext: ext, data: a, id: _id++, total: ((a.length + 127) >> 7, img: img };
         var cf = {name: name, type: gt, data: a, id: _id++, total: strSize, imgTag: imgTag}; //put new image file in the container
-        if (ext == 'err') {
+        if (ext == 'ere') {
             ext = '???';
             cf.forcedDat = true; //file has been forced to be displayed as DAT
             cf.prevext = curext; //and was previously displayed as another ext
         }
+        else if (curext && curext != ext) cf.forced_ext = true; 
         else cf.forcedDat = false;
         cf.ext = ext;
         if (nr && gt == "isRomdump") {
@@ -8718,7 +8739,7 @@
     //(PVB MOD) improvement of load_data()
     function load_data(name, a, imgTag, curext) { //(PVB COM) load_data() is called by load() and flush_images() to load the OS/Windows Image file into memory
         //(PVB COM) name = full filaname of the disk image file like "Foo.XFD"; a =  data of the OS/Windows file;
-        // imgTag = the image type/mime when the Client loads an image without or with unknown file extension; "curext" current ext of exiting file in tool (conversion)
+        // imgTag = the image type/mime when the Client loads an image without or with unknown file extension; "curext" current ext of existing file in tool (conversion)
         console.log(_hr + "\n>load_data() Loading '" + name + "' with imgTag '" + imgTag + "'..."); //(PVB HINT)
         var originalExt = "";
         var ext = "";
@@ -8727,15 +8748,15 @@
             ext = "xfd";
         }
         else {
-            originalExt = name.substring(name.lastIndexOf(".") + 1).toLowerCase(); //the reqested ext before anlylising it by get_ext()
+            originalExt = name.lastIndexOf(".") == -1 ? "" : name.substring(name.lastIndexOf(".") + 1).toLowerCase(); //the requested ext before anlylising it by get_ext()
             ext = get_ext(name, a, imgTag, false); //(PVB COM) get the filename extension according to its contents and/or its extension!; "false" for not atari DOSfile
         }
         //(PVB MOD) the new function get_type() to remplace "var e = _exts[ext];"
         //Note: for disk image, get_ext() checks and corrects extension adequacy by analyzing disk content, in order to avoid ATR constructor crash
-        //get_ext() returns "err" if dcm error or atr error
+        //get_ext() returns "ere" if dcm error or atr error
         if (curext && curext != "forceATR") { //it is an Ext Type conversion by the user, so put right extension
             name = name.substring(0, name.lastIndexOf(originalExt.toUpperCase()) - 1); //cancel the file ext that had been added
-            if (ext == "err" && (curext == '???' || curext == 'dat')) { //no need to reopen a dat file, because "err" will be displayed as DAT
+            if (ext == "ere" && (curext == '???' || curext == 'dat')) { //no need to reopen a dat file, because "ere" will be displayed as DAT
                 console.log("load_data() => error in get_ext(), '" + originalExt + "' file extension not recognized, so redisplay it as a DAT file!");
                 _shown.prevext = originalExt;
                 _shown.forcedDat = true;
@@ -8749,7 +8770,7 @@
             return load_one(name, ext, a, imgTag, gt, curext);
         }
         //Here: we have an isDisk disk image.
-        console.log("load_data() converts and loads the recognized '" + ext + "' image file into a displayable ATR file..."); //(PVB HINT)
+        console.log("load_data() converts and loads the '" + ext + "' disk image file into a displayable ATR file..."); //(PVB HINT)
         //make an ATR with the isDisk (isDisk are always converted into ATR in the tool)
         var str = '';
         if (ext == 'dcm') { //if it is a dcm file, convert it!
@@ -8760,6 +8781,7 @@
         else {
             var atr = new ATR(a, name, ext);
             if (!atr) str = '! ERROR while trying to open the "' + name + '", it cannot be converted into ATR disk image!';
+            if (a.length == 0) a = atr.d.slice(16); //atr has been created, but length of "a" was null, so it was an empty file, copy the restructured "atr.d" in "a"
         }
         //(PVB MOD) improvement of the files array
         if (!atr) {
@@ -8773,6 +8795,7 @@
             dirs.forEach(f => { //purpose here is to get type of each Atari DOS file, and if OK, to set it in the "blue" directory on left 
                 if (f.valid == 2 && f.sectors.length) { //if not valid, or no sectors (empty file) the file is not displayable, so exit to next "f"
                     var file = { name: f.name, name83: f.name83, id: _id++, start: f.start, total: f.total, flags: f.flags, recovered: f.recovered, is_dir: f.is_dir};
+                    if (f.gname83) file.gname83 = f.gname83; //genuine filename with inverted char (non-DOSx compatible)
                     file.data = atr.read_file(f); //atr.read_file() calls sparta.read_file() or dosxe.read_file() accordingly
                     file.dosType = atr.dosType; //copy atr.dosType in the file, DOS type found into the ATR disk is an important information to know
                     file.ext = f.is_dir ? "???" : get_ext(file.name, file.data, false, true); //actual ext is from get_ext() (and not from filename ext)
@@ -8846,7 +8869,6 @@
                 _containers.forEach(c => c.files.forEach(i => { if (i.id == _shown.id) exit = true })); //if the file is still in the _containers, exit
             //else display the root (=last file) of the first file of the _containers list (=the new loaded) - case by default
             if (!exit) show(_containers[0].files[(_containers[0].files.length - 1)].id);    // select on
-            //(PVB MOD)//Previously//show(_containers[0].files[0].id); display the first file of the first container of the _containers list
         }
     }
 
@@ -8965,9 +8987,8 @@
             }
         }
         var e = f.ext == '???' ? "dat" : f.ext; //(PVB MOD) force extension "???"" to be a "DAT" in the list
-        var s = `<div style='display:inline-block'><label>Ext Type :<select onchange="show_as(this.value)" title="...you can try to change type" name="ext_type">`;
+        var s = `<div style='display:inline-block'><label>Ext Type :<select onchange="show_as(this.value)" title="...you can try to change type" name="ext_type" ${f.empty ? "disabled" : ""}>`;
         //(PVB MOD) Add display of extension in the list
-        //previously// Object.keys(_exts).forEach(ext => s += `<option ${ext[0] == '-' ? "disabled" : ""} value='${ext}' ${ext == f.ext ? 'selected' : ''}>${_exts[ext].name} ${ext[0] == '-' ? "" : " (" + ext + ")"}</option>`);
         var i = 0;
         Object.keys(_exts).forEach(ext => s += `<option ${_entable[f.type][i++] ? "" : "disabled"} value='${ext}' id='id_${ext}' ${ext == e ? 'selected' : ''}>${_exts[ext].name} ${ext[0] == '-' ? "" : " (" + ext + ")"}</option>`);
         s += `</select></label></div>`;
@@ -9080,7 +9101,7 @@
             var sLine = '';           //"0000000001111111111222"
             //(PVB COM) sLine format is "1234567890123456789012"
             //(PVB COM)             for ".*<FILENAMEext>.tXXX.."
-            var nFile = f.name83; // DOS filename (or number of sector for disk size if the container file is the "isDisk")
+            var nFile = f.gname83 ? f.gname83 : f.name83; // DOS original filename (or number of sector for disk size if the container file is the "isDisk")
             //(PVB ADD) the different type of DOS
             var isDos34XE = f.dosType == 3 || f.dosType == 4 || f.dosType == 5; //DOS3 or DOS4 or DOSXE
             var isSparta = f.dosType == 0;
@@ -9137,13 +9158,12 @@
             container.files.forEach(file => draw_line(`#canvas${file.id}`, info(file), file.recovered, file.is_dir));
         });
 
-        // if no containers (no opened file), then show supported file types and extensions 
+        // if no containers (no opened file), then display all supported file types and extensions from _exts list object
         if (m.length == 0) {
-            var s = `<div class='exts'>`;
-            Object.keys(_exts).forEach(ext => s += ext[0] == '-' ?
-                `<div><b></b><strong>${_exts[ext].name}</strong><div>` :
-                `<div><b>${ext}</b>${_exts[ext].name}<div>`
-            );
+            var s = `<div class='exts'>`; //see .exts in the style sheet
+            Object.keys(_exts).forEach((ext) => {
+                s += (ext[0] == '-') ? `<div><b> </b><strong>${_exts[ext].name}</strong></div>` : `<div><b>${ext}</b>${_exts[ext].name}</div>`;
+            });
             s += `</div>`;
             _h('#tabs', s);
             reset_tools(); //(PVB ADD) disable tool bouttons as no file is displayed
@@ -9156,7 +9176,7 @@
   
     //(PVB ADD) render_extract(f, isDisk) function is for rendering extract menu only, called by render_file(f) function
     function render_extract(f, isDisk) {
-        var ipb = `input class='buttonstyled' type='button'`;
+        var ipb = `input class='btnstyle' type='button' `;
         var str = `pattern='[0-9a-fA-F]{1,6}' placeholder='0...FFFF' title='Address in valid hex code 0...FFFF'`;
         var strdh = `pattern='[$0-9a-fA-F]{1,4}' title='Enter dec number, or hex number starting with $'`;
         var addmenu = `
@@ -9202,8 +9222,8 @@
         //now add text area, and normal buttons
         addmenu += `  
           <div style='display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between;'>
-            <div><input class='buttonstyled' style='font-weight: bold; width:118px; text-wrap:auto;' type='submit' value='=> EXTRACT & DISASSEMBLE'></div>
-            <div><${ipb} id='cancel_extract' value='CANCEL EXTRACT' onclick='extract_reset()' ${f.extract_launched ? '' : 'disabled'}></div>
+            <div><input class='btnstyle' style='font-weight: bold; width:118px; text-wrap:auto;' type='submit' value='=> EXTRACT & DISASSEMBLE'></div>
+            <div><${ipb}id='cancel_extract' value='CANCEL EXTRACT' onclick='extract_reset()' ${f.extract_launched ? '' : 'disabled'}></div>
           </div>
         </div>`;
         //now the extract saving buttons - and close form
@@ -9211,10 +9231,10 @@
         <div><fieldset>
           <legend><b>Extract saving buttons: </b></legend>
           <div style='display:flex; justify-content:space-between;'>
-            <${ipb} id='save_extract' title='raw data in a DAT file' value='Download extracted data' onclick='save_as_extract(4)' ${f.extract_launched ? '' : 'disabled'}>
-            <${ipb} id='extractconv2file' title='adding $FFFF Headers & RUNADD at dis. start address' value='Save extract to OBJ file' onclick='save_as_extract(1)' ${f.extract_launched ? '' : 'disabled'}>
-            <${ipb} id='extract2boot' title='adusting number of sectors, 720-SD boot disk' value='Save extract into ATR disk' onclick='save_as_extract(3)' ${f.extract_launched ? '' : 'disabled'}>
-            <${ipb} id='extractconv2boot' title='adding the 6 boot bytes, 720-SD boot disk' value='Convert & Save extract into ATR disk' onclick='save_as_extract(2)' ${f.extract_launched ? '' : 'disabled'}>
+            <${ipb}id='save_extract' title='as raw data in a DAT file' value='Download extracted data' onclick='save_as_extract(4)' ${f.extract_launched ? '' : 'disabled'}>
+            <${ipb}id='extractconv2file' title='adding $FFFF headers & RUNADD at disass. start address' value='Save extract to OBJ file' onclick='save_as_extract(1)' ${f.extract_launched ? '' : 'disabled'}>
+            <${ipb}id='extract2boot' title='extract is a 720-SD boot disk, nbr of sectors is computed' value='Save extract into ATR disk' onclick='save_as_extract(3)' ${f.extract_launched ? '' : 'disabled'}>
+            <${ipb}id='extractconv2boot' title='computing & adding 6 boot bytes on a720-SD boot disk' value='Convert & Save extract into ATR disk' onclick='save_as_extract(2)' ${f.extract_launched ? '' : 'disabled'}>
           </div>
         </div></fieldset>
       </div>
@@ -9227,36 +9247,39 @@
     function showDisOption() {//showDisOption() is called by render_file() for disassembly and dump display options
         // _dof: display option iniialization, used to redraw check buttons
         var _dof = [
-            ["cShowAtasciiChar", _bShowAtasciiChar, "Show ATASCII code DUMP"],
-            ["cShowDispChar", _bShowDispChar, "Show ANTIC internal display code DUMP"],
+            ["cShowAtasciiChar", _bShowAtasciiChar, "Show Atari ATASCII charset"],
+            ["cShowDispChar", _bShowDispChar, "Show ANTIC Internal charset"],
             ["cShowROMBank", _bShowROMBank, "ROM: Show addresses with Rom bank number [n00..FF] index"],
             ["cShowDisLinks", _bShowDisLinks, "DIS: Show disassembly destination address in hyperlinks"],
             ["cShowDisBRK", _bShowDisBRK, "DIS: Accept code disassembly with up to 2 BRK instructions"],
             ["cShowA5200Eq", _bShowA5200Equates,"DIS: Use Atari 5200 OS equates instead of 800/XL/XE equates"],
             ["cShowDisFlags", _bShowDisFlags, "DIS: Show disassembly code flags (webpage js info for dev.)"]
         ];
-        var tmpstr = `<div class='doblock'>`;
-        tmpstr += `<form id='disoptionform'><fieldset><legend><b>Dump & Disassembly options: </b></legend>`;
+        var tmpstr = `<div><form id='disoptionform' class='doblock'>`; //Start of block Form
         //(PVB TODO) check to add "${_bShowAtasciiChar ? "disabled" : ""}" for disabling Option Buttons according to displayed cases
         //(like disable ROM bank display button if no rom is displayed...)
-        tmpstr += '<div>'
-        for (var i = 0; i < _dof.length; i++) {
+        tmpstr += `<div><fieldset><legend><b>Dump & Disassembly options: </b></legend>`; //First fieldset
+        tmpstr += '<div>';
+        for (var i = 2; i < _dof.length; i++) { //start at 2, for disassembly option
             _checks[_dof[i][0]] = _dof[i][1];
-            if (i != 1) tmpstr += `<div class="radio">`; //in order to put first and second button (char display) on the same line
-            tmpstr += check_init(_dof[i][0], _dof[i][2]);
-            if (i != 0) tmpstr += '</div>'; //in order to put first and second button on the same line
+            tmpstr += `<div class='radio'>` + check_init(_dof[i][0], _dof[i][2]) + '</div>';
             //previously for one line/one button//tmpstr += '<div class="radio">' + check_init(_dof[i][0], _dof[i][2]) + '</div>';
         }
         tmpstr += '</div>';
-        tmpstr += `</fieldset></form>`;
-        tmpstr += `
-            <div class='dobgrp'><input class='buttonstyled' type='button' value='Save listing as .txt' title='=Client text file, as displayed' onclick='save_disassembly(0)' />
-            <input class='buttonstyled' type='button' value='Save listing as .html (without html style)' title='=simple HTML, no CSS, no Atari char' onclick='save_disassembly(1)' />
-            <input class='buttonstyled' type='button' value='Save listing as .html (Atari font included)' title='=with CSS style, keeping Atari char if displayed' onclick='save_disassembly(2)' /></div>
-            </div>`;
-        tmpstr += `<div class='doradgrp'><fieldset><legend><b>Listing display font options: </b></legend><span class='radio'>`;
-        tmpstr += `${radio_init('atarichlist', ['Normal Dump with Atari Font', 'Dump with monospace webfont', 'Display all with Atari Font'])}</span></fieldset><div>`;
-        tmpstr += '</div>';
+        tmpstr += `</div></fieldset>`; //End of first fieldset
+        //tmpstr += `<div class='doradgrp'><fieldset><legend><b>Listing display font options: </b></legend><div class='radio'>`;
+        tmpstr += `<div>`; //Start of 2nd block of fieldsets
+        tmpstr += `<div><fieldset><legend><b>Listing display font options: </b></legend><div>`; //Second fieldset
+        tmpstr += `${radio_init('atarichlist', ['Normal Dump with Atari Font', 'Dump with monospace Webfont', 'Display all with Atari Font'], null, true)}</div>`;
+        tmpstr += '</div></fieldset>'; //End of second fieldset
+        tmpstr += `<div><fieldset><legend><b>Hex Dump Charset display: </b></legend><div>`; //Third fieldset
+        for (var i = 0; i < 2; i++) {
+            _checks[_dof[i][0]] = _dof[i][1];
+            tmpstr += `<div class='radio'>` + check_init(_dof[i][0], _dof[i][2]) + '</div>';
+        }
+        tmpstr += '</div></fieldset>'; //End of third fieldset
+        tmpstr += '</div>'; //End of 2nd block of fieldsets
+        tmpstr += '</form></div>'; //End of block Form
 
         _h("#disoption", tmpstr); //set the display option menu in the screen buffer
         toggle_disoption(true); //and force display of the display option menu
@@ -9269,25 +9292,20 @@
         );
         if (_bShowAtariFont) { //all in Atari font
             preShow.style.cssText += "color: #005; background-color: #EEE; font-size: 12px; line-height: 14px; font-family: 'Atari'";
-
             preData.style.fontFamily = "'Atari'";
             preData.style.fontSize = "12px";
             preData.style.fontWeight = "normal";
-
         } //else thanks to refresh() "pre #show" has no specific type, CSS style of "pre" applied
         else if (_bShowWebChar ) { //"pre data" with standard Monospace web font for data and hex dump
             preShow.style.fontSize = "13px"; //adjust pre font
             preShow.style.lineHeight = "14px";
-
             preData.style.fontFamily = "'Noto Sans Mono', monospace";
             preData.style.fontSize = "12px";
             preData.style.fontWeight = "bolder";
-
         }
         else { //default "pre data" with Atari font for data and normal font for hex dump
             preShow.style.fontSize = "13px"; //adjust pre font
             preShow.style.lineHeight = "13px";
-
             preData.style.fontFamily = "'Atari'";
             preData.style.fontSize = "10px";
             preData.style.fontWeight = "normal";
@@ -9300,82 +9318,85 @@
         //(PVB COM) rendering = display the content at the right side of the HTML page (id #tabs DIV container)
         // on top : Class .info
         // on bottom : DIV #file
-
         var isCode = (_exts[f.ext] ? _exts[f.ext].is_code : false) || false;
         var isTxt = (_exts[f.ext] ? _exts[f.ext].is_txt : false) || false; //(PVB ADD) to force true or false, and not undefined
         var isImg = _exts[f.ext] ? _exts[f.ext].is_img : false;
         var isFnt = _exts[f.ext] ? _exts[f.ext].is_fontset : false; //(PVB ADD AND MOD) //previously // f.ext == 'fnt' //
-        
         f.isSearchable = isImg || isFnt || false; //allow the "search picture and font" flag into file flag  
-
+        
         var isNwExt = (f.original_ext && f.original_ext != f.ext) ? true : false;
         var pre = !isTxt && !isImg && !isFnt;
-        
         var isRomdump = f.type == "isRomdump";
         var isDisk = f.type == "isDisk";
-
-        f.isExtractable = pre && (f.type != "isArc"); //allow the "extract file data" flag into file flag
-
-        //Special case to force and hexdump the file
+        f.isExtractable = pre && (f.type != "isArc") && !f.empty; //allow the "extract file data" flag into file flag
+        
+        //Special cases to force and display the file Hex dump
         if (f.forceHexDump) {
             pre = true;
             isTxt = false;
             isImg= false;
             isFnt= false;
         }
-
         var controls = `<div class='radio' title='contextual display options (number of columns, colors...)'>`;
-        var buttons = ''; //buttons string is for file saving
-        var button2 = ''; //button2 string is when extension has changed
-        var imageinfo = '';
-        var addmenu = ''; //(PVB ADD)
-        var tmptxt = ''; //(PVB ADD)
+        var buttons = ''; //displayed text saving buttons
+        var button1 = ''; //Atari Files, ATR, XFD, ROM or CART saving buttons
+        var button2 = ''; //file extension management saving buttons
+        var imageinfo = ''; //text about the Ext Type and file Type
+        var addmenu = ''; //additionnal menu for ROM image or for Extract menu
+        var romtxt = ''; //Rom image type text
+        var ctrldat =''; //DAT file convertion to XFD/ATR button
         var hexsizetxt = "($" + hdx(f.data.length) + ") bytes";
         //(PVB ADD) compute and display checksum
-        var chksum = '';
         var c;
         if (isDisk) c = calChkSum(f.atr.d, 16);
         else if (isRomdump) c = calChkSum(f.rom.romData, 16);
         else c = calChkSum(f.data, 0);
-        chksum = " [chksum $" + hdx (c) + "] ";
-
-        if (isTxt || isFnt) {
+        var chksum = " [chksum $" + hdx (c) + "] "; //Checksum string
+        //[controls] buttons
+        if (isTxt || isFnt) { //[controls] are to modify the display of Text or Font
             controls += `
                 ${f.ext == 'bas' ? check_init('indent', 'Indent') : ""}
                 ${isFnt ? check_init('multicolor', 'Multicolor') : ""}
                 ${radio_init('layout', ['38', '40', '80', 'Wide'])}`;
         }
-        //(PVB MOD) Buttons are valid for text only, not for img, nor font 
-        if (isTxt) {
-            buttons += `<button type="button" title="=convert & save code listing into Client UTF text" onclick="save(2)">Save as UTF text</button>`;
-            buttons += `<button type="button" title="=take a PNG screenshot of the code listing" onclick="save_as_png()">Save as PNG Image</button>`;
-            buttons += `<button type="button" title="=save (modified) code listing into Atari LST text file" onclick="save(1)">Save as Atari LST</button>`;
-        }
         if (isFnt || (isImg && is_palettable(f.ext))) { //previously //if (f.ext == 'fnt') || ...
-            controls += `<div class='palette'>${palette(_palette)}</div>`;
+            controls += `<div class='palette'>${palette(_palette)}</div>`; //[controls] are to modify the display of Img
+        } 
+        controls += `</div>`;
+        //(PVB ADD) [buttons] buttons for saving purpose
+        var ot = "<button class='btnstyle' type='button' ";
+        if (pre) { //[buttons] are for displayed text saving, when it is not Text, nor Img, nor Font
+            buttons += `${ot}title='=Client text file, as displayed' onclick='save_disassembly(0)'>Save listing as .txt</button>`;
+            buttons += `${ot}title='=simple HTML, no CSS, no Atari char; better with Webfont Dump setting' onclick='save_disassembly(1)'>Save listing as .html (without html style)</button>`;
+            buttons += `${ot}title='=with CSS style, keeping Atari char if displayed; use Normal Dump setting' onclick='save_disassembly(2)'>Save listing as .html (Atari font included)</button>`;
         }
-        //(PVB ADD) Rom Management Menu
+        if (isTxt) { //[buttons]  are valid for Text only, not fot Immg, nor Font
+            buttons += `${ot}title='=convert & save code listing into Client UTF text' onclick='save(2)'>Save as UTF text</button>`;
+            buttons += `${ot}title='=take a PNG screenshot of the code listing' onclick='save_as_png()'>Save as PNG Image</button>`;
+            buttons += `${ot}title='=save (modified) code listing into Atari LST text file' onclick='save(1)'>Save as Atari LST</button>`;
+        }
+        //(PVB ADD) Info and inputs display for Rom Management Menu
         if (isRomdump) {
             if (f.rom.oldRomType === undefined) //First iteration - no orignal CART type saved
             {
                 if (f.rom.romType === 0) {
-                    tmptxt = `<strong>Info:</strong> ROM image file has no CARTridge identification header: <strong>` + f.rom.romName; 
-                    tmptxt += `</strong><br />You can choose a relevant mapping type from the list (which displays the best possible matches) and download the new CART file.`;
+                    romtxt = `<strong>Info:</strong> ROM image file has no CARTridge identification header: <strong>` + f.rom.romName; 
+                    romtxt += `</strong><br />You can choose a relevant mapping type from the list (which displays the best possible matches) and download the new CART file.`;
                 }
                 else {
-                    tmptxt = `<strong>Info: "` + f.rom.romName + `"</strong> type has been identified in the ROM image file CARTridge header.`;
-                    tmptxt += `<br />No need to change its mapping type from the list, but you can try.`;
+                    romtxt = `<strong>Info: "` + f.rom.romName + `"</strong> type has been identified in the ROM image file CARTridge header.`;
+                    romtxt += `<br />No need to change its mapping type from the list, but you can try.`;
                 }
             }
             else { //Second iteration - there is an original CART type saved
                 if (f.rom.oldRomType > 0)
-                    tmptxt = `<strong>Reminder:</strong> Original ROM image file CARTridge type was: <strong>"` + f.rom.oldRomName + `"</strong>`;
+                    romtxt = `<strong>Reminder:</strong> Original ROM image file CARTridge type was: <strong>"` + f.rom.oldRomName + `"</strong>`;
                 else
-                    tmptxt = `<strong>Reminder:</strong> ROM image file has no CARTridge header.<br />You can choose a relevant mapping type from the list, and download the new CART file.`;
+                    romtxt = `<strong>Reminder:</strong> ROM image file has no CARTridge header.<br />You can choose a relevant mapping type from the list, and download the new CART file.`;
             }
             addmenu = `
             <div class='rommap'>
-                <div id='rominfoid' class='rominfoid'>${tmptxt}</div>
+                <div id='rominfoid' class='rominfoid'>${romtxt}</div>
                 <fieldset>
                 <legend><b>ROM Memory Bank mapping type selection (75 first types):</b> <a href='https://github.com/atari800/atari800/blob/master/DOC/cart.txt' target='_blank'>(see information link here)</a>
                 </legend>
@@ -9386,8 +9407,7 @@
             tmpromsize = f.data.length >> 10;
             hexsizetxt += " = " + tmpromsize + "KB ROM ";
         }
-        //(PVB end of ADD)
-        //(PVB ADD) ///WIP// render the Extract Menu if requested by clicking the tool E
+        //(PVB ADD) Render the Extract Menu if requested by clicking the tool E
         if (f.isExtractable) {
             set_tool("E", true);
             if (f.extract_menu_request) addmenu += render_extract(f, isDisk);
@@ -9395,29 +9415,29 @@
         else { 
             set_tool("E", false);
         }
-        //(PVB ADD) ROM or CART saving buttons
+        //(PVB ADD) [button1] management for Atari Files, ATR, XFD, ROM or CART saving buttons
         if (isRomdump) { //special buttons to save new CART header in a ".car" file...
             if (f.rom.isCart || f.rom.restructured) //...if it is a CART 
-                buttons += ` <button type='button' title='=without CART header' onclick='save_wo_header()'>Download raw ROM</button>`;
-            buttons += ` <button type='button' title='=adding the CART header' onclick='save_as_cart()' ${((!f.rom.isCart && f.rom.romType) || (f.rom.isCart && f.rom.oldRomType)) ? '' : 'disabled'}>`;
-            buttons += `Download new CART</button>`;
+                button1 += ` <button type='button' title='=without CART header' onclick='save_wo_header()'>Download raw ROM</button>`;
+            button1 += ` <button type='button' title='=adding the CART header' onclick='save_as_cart()' ${((!f.rom.isCart && f.rom.romType) || (f.rom.isCart && f.rom.oldRomType)) ? '' : 'disabled'}>`;
+            button1 += `Download new CART</button>`;
         }
         else { //Atari file, ATR or XFD saving buttons
-            var db = isDisk && f.atr && (f.atr.restructured || f.atr.buggy || f.atr.bModif || f.atr.forcedExt || f.atr.newDisk); //force button display when ATR disk image has been modified
+            var db = isDisk && f.atr && (f.atr.restructured || f.atr.buggy || f.atr.bModif || f.atr.forcedExt || f.atr.newDisk); //force both XFD and ATR buttons when ATR disk image has been modified
             if (!isDisk) //no use to save original file as this is the disk image file that has been loaded
-                buttons += `<button type='button' title='=extract it if from disk image, or re-save original file' onclick='save(0)'>Download original Atari file</button>`; 
+                button1 += `<button type='button' title='=extract it if from disk image, or re-save original file' onclick='save(0)'>Download original Atari file</button>`; 
             //(PVB ADD) Add a Save Buttons for saving XFD/ATX/PRO/DSK into ATR, and ATR/ATX/PRO/DSK into XFD
             //(PVB COM) We know that we have in memory a disk file always converted in ATR
             if (db || isDisk && f.ext !="atr") { 
                 //so we can save it into ATR if it was an XFD for instance
-                buttons += `<button type='button' title='=convert to ATR disk image (with ATR header)' onclick='save_as_dsk("ATR")'>Download ATR file</button>`; 
+                button1 += `<button type='button' title='=convert to ATR disk image (with ATR header)' onclick='save_as_dsk("ATR")'>Download ATR file</button>`; 
             }
             if (db || isDisk && f.ext !="xfd") {
                 //so we can save it into XFD if we remove ATR 16-bytes header
-                buttons += `<button type='button' title='=convert to XFD disk image (no ATR header)' onclick='save_as_dsk("XFD")'>Download XFD file</button>`; 
+                button1 += `<button type='button' title='=convert to XFD disk image (no ATR header)' onclick='save_as_dsk("XFD")'>Download XFD file</button>`; 
             }
         }
-        //(PVB ADD) set the imageinfo text
+        //(PVB ADD) set the "imageinfo" text about the Ext Type and file Type
         var oext = f.prevext ? f.prevext : f.original_ext;
         if (isRomdump)
             imageinfo += `<div><em>INFO: Dump image file <b>Ext type</b> was automatically set and can only change to 'DAT' type</em></div>`;
@@ -9428,40 +9448,37 @@
         }
         else if (f.type == "isRaw" && f.forcedDat)
             imageinfo += `<div><em>INFO: the '${oext}' disk image type signature for the file given extension was not found, so file is displayed as 'DAT'</em></div>`;
-        //(PVB ADD) changed extension text and reset type button
-        button2 = `<div  style='overflow:auto; padding-top:6px;'> `; //open new <div> text & button
-        //if (!isDisk && isNwExt) { //(exclude isDisk because no new type for a disk image file)
-        if (isNwExt) { //if new ext requested from the list then add "save and reset extension" buttons
-            button2 += `File extension type has been changed from '${oext}' to '${f.ext}' in Ext Type list...
-                <div style='display:inline-block; float:right;'>
-                    <button type='button' title='download file with new extension' onclick='save_as_new()'>Download new file</button>
-                    <button type='button' title='cancel type change' onclick='reset_type_button()'>Reset type</button>
-                </div>`;
+        //(PVB ADD) [button2] is when a new XFD is created, and for 'changing extension and reset type button' management
+        if (f.ext == 'xfd' && f.forced_ext) button2 += `INFO: The new XFD/ATR disk image file has been created!`;
+        else if (isNwExt || f.forced_ext) { //extenion has changed, if by the user then isNwExt is true and then add "reset extension" button
+            button2 += `<div  style='overflow: auto;'>`;
+            if (isNwExt) //if isNwExt, then the new ext is  requested by the user
+                button2 += `INFO: File extension type has been changed from '${oext}' to '${f.ext}' in Ext Type list...`;
+            else if (f.forced_ext) //if ext was forced by get_ext()
+                button2 += `<em>INFO: File extension is modified to '${f.ext == '???' ? 'DAT' : f.ext}' to display the closest file type</em>`;
+            button2 += `<div style='float: right;'>
+                        <button type='button' title='download file with new extension' onclick='save_as_new()'>Download new ext file</button>
+                        ${isNwExt ? "<button type='button' title='cancel type change' onclick='reset_type_button()'>Reset ext type</button>" : ""}</div>`;
+            button2 += '</div>';
         }
-        else if (f.forced_ext) //if ext was forced by get_ext(), no need to add "save and reset extension" buttons
-            button2 += `<em>INFO: File extension is modified to '${f.ext == '???' ? 'DAT' : f.ext}' to display the closest file type</em>`;
-        if (f.type == 'isRaw') 
-            button2 += `<div'>
-                <button type='button' title='create a new XFD/ATR disk from the data' onclick='create_atr()'>Create XFD/ATR disk</button>
-                </div>`;
-        button2 += `</div>`; //close </div> text & button
+        //(PVB ADD) [ctrldata] button to create a XFD the DAT file raw data
+        if (f.type == 'isRaw' && ((f.original_type && f.original_type != "isDisk") || (!f.original_type)))
+            ctrldat = `<div style='float: right; margin-left: 8px;'><button type='button' title='create a new XFD/ATR disk image from the raw data' onclick='create_atr()'>Create XFD/ATR from DAT</button></div>`;
         //(PVB end of ADD)
-        
-        controls += `</div>`;
 
         _h("#tabs",
         `<div class='info'>
-            <div style='overflow:auto;padding-bottom:4px;'><b>${f.name}</b>
-                <div style='display:inline-block; float:right'>${buttons}</div>
+            <div style='overflow: auto; padding-bottom: 4px;'><b>${f.name}</b>
+                <div style='float: right'>${button1}</div>
             </div>
-            <div> ${ext_option(f)} ${f.data.length} ${hexsizetxt} ${chksum}
-                <div style='display:inline-block; float:right'>${controls}</div>
+            <div style='padding-bottom: 6px;'> ${ext_option(f)} ${f.data.length} ${hexsizetxt} ${chksum} ${ctrldat}</div>
+            <div style='padding-bottom: 3px;'> ${imageinfo} ${button2}</div>         
+            <div style='border-top: solid 1px #AAC; padding-top: 8px'> ${buttons}
+                <div style='float: right; padding-top: 2px'>${controls}</div>
             </div>
-            ${imageinfo}
-            ${button2}
         </div>
         ${addmenu}
-        <div id='search_controls'></div>
+        <div id='search_controls' style='font-size: 12px;'></div>
         <div id='file'>
             <div>
                 ${pre ? `<pre id='disoption'></pre><pre id='show'></pre>` : ''}
@@ -9475,7 +9492,7 @@
         if (f.edit_img)
             refresh_image_controls(f);
 
-        //(PVB ADD) ///WIP// render the Option Menu if requested by clicking the tool "P"
+        //(PVB ADD) //render the Option Menu if requested by clicking the tool "P"
         if (pre) {
             set_tool("P", true);
             showDisOption(); //disassembly and dump display option is initialized, and displayed, according to flags as global variables.
@@ -9483,15 +9500,16 @@
         else {
             set_tool("P", false);
         }
-        //(PVB ADD) ///WIP// render the Search Menu if requested by clicking the tool "S"
+        //(PVB ADD) //render the Search Menu if requested by clicking the tool "S"
         if (f.isSearchable) {
             set_tool("S", true);
-            if (f.searchrequest) _h('#search_controls',
-            `<fieldset><legend>Search Menu:</legend><div><button type='button' onclick='s_c(4)'>+$1000</button> <button type='button' onclick='s_c(3)'>+$100</button>
-            <button type='button' onclick='s_c(2)'>+$10</button> <button type='button' onclick='s_c(1)'>+$1</button></div>
-            <div><button type='button' onclick='s_c(-4)'>-$1000</button> <button type='button' onclick='s_c(-3)'>-$100</button>
-            <button type='button' onclick='s_c(-2)'>-$10</button> <button type='button' onclick='s_c(-1)'>-$1</button></div>
-            <button type='button' onclick='s_c(0)'>Reset Search</button><span> Search Offset in Datafile: $${hdx(_shown.offst)}<br /></fieldset>`);
+            if (f.searchrequest) { _h('#search_controls',
+        `<fieldset><legend>Search Menu:</legend><div><button type='button' onclick='s_c(4)'>+$1000</button> <button type='button' onclick='s_c(3)'>+$100</button>
+        <button type='button' onclick='s_c(2)'>+$10</button> <button type='button' onclick='s_c(1)'>+$1</button></div>
+        <div><button type='button' onclick='s_c(-4)'>-$1000</button> <button type='button' onclick='s_c(-3)'>-$100</button>
+        <button type='button' onclick='s_c(-2)'>-$10</button> <button type='button' onclick='s_c(-1)'>-$1</button></div>
+        <button type='button' onclick='s_c(0)'>Reset Search</button><span> Search Offset in Datafile: $${hdx(_shown.offst)}<br /></fieldset>`);
+            }
         }
         else set_tool("S", false);
     }
@@ -9689,12 +9707,15 @@
     }
     //(PVB ADD) extract_reset() function is called by HTML event when clicking on "ReShow Full Hex Dump"
     function extract_reset() {
-        if (_shown.extract_launched) {
-            _shown.extract_launched = false;
-            delete _shown.extractedData;
-            delete _shown.extracted_disk;
-            delete _shown.extracted_file;
-            _shown.extract_menu_request = false;
+        if (_shown.extract_menu_request && _shown.extract_menu_request == 1 ) { //Extract menu was displayed, so cancel it
+            _shown.extract_menu_request = 0;
+            if (_shown.extract_launched) { //An Extract was in progress, so cancel it
+                _shown.extract_launched = false;
+                delete _shown.extractedData;
+                delete _shown.extracted_disk;
+                delete _shown.extracted_file;
+                _shown.extract_menu_request = false;
+            }
             refresh();
         }
         return;
@@ -9745,8 +9766,7 @@
             tmpData[7] = 7;
             rf.tmpData = tmpData;
         }*/
-        ///WIP// RESET EXT if EXT has been changed!!
-        ///WIP// reset_ext and reset_hexa
+        // now reset_ext() and reset_hexdump() to redisplay the new Rom dump bank map
         reset_ext();
         reset_hexdump();
         refresh();
@@ -9780,13 +9800,13 @@
     
     //(PVB ADD) open_mergedfile() function to open a merged Atari Executable file into a new file in the Tool
     function open_mergedfile() {
-        load_one("mergedfile.xex", "exe", _shown.mergedfile, "", "isFile");
+        load_one(mod_ext(_shown.name, "MERGED"), "xex", _shown.mergedfile, "", "isFile");
         delete _shown.mergedfile;
         refresh_containers();
     }
     //(PVB ADD) launch_test() function to create a new file in the Tool, this file is bytes-filled in order to test the Memory Equate
     function launch_test() { //to launch with CTRL+SHIFT+J
-        alert("PVBest Welcomes you to the secret test area!")
+        alert("PVBest welcomes you to the secret test area!")
         var d = [];
         var i;
         d.push(0xA9, 0xFF);
@@ -9832,9 +9852,9 @@
             _bModif = true;
             var naf = _shown.name;
             var nof = naf.lastIndexOf(".");
-            if (nof != -1) naf = naf.slice(0, nof) + "_modified" + naf.slice(nof);
-            else naf += "_modified";
-            load_data(naf, d, ""); //load it into the tool (load_data is better than load_one(_shown.name, _shown.ext, d, "", _shown.type);
+            if (nof != -1) naf = naf.slice(0, nof) + "_MODIF" + naf.slice(nof); //add _MODIF before the current extension
+            else naf += "_MODIF";
+            load_data(naf, d, ""); //load it into the tool, use load_data() that is better than load_one();
             refresh_containers(); //will close the Hex Editor
         }
         if (msg.closeHexED) {//no need to check
@@ -9850,67 +9870,67 @@
         a.forEach((b) => re.push(b)); //copy uint8 data in temp buffer
         s.forEach((b) => sg.push(b));//var sg = s.toSpliced(0,0); //copy of segment list array
         var i = sg.length - 1; //set last segment[i] of the file
-        var opt = false; //no merging yet done
+        var opt = false; //nothing found yet
         while (i > 1) { // i == 1 when reaching the first segment that is the $FFFF header
-            if (sg[i].err && i > 1) { //last buggy segment can be cancelled, assuming first segment is OK
+            if (sg[i].ers && i > 1) { //last buggy segment can be cancelled, assuming first segment is OK, and only the last can be buggy
                 re = re.slice(0, (sg[i-1].offset + sg[i-1].len)); //cancel the buggy segment
                 console.log(" >segs_merging => has cancelled last buggy segment");
-                sg.pop(); //remove it
+                sg.pop(); //remove it from seg list
                 mod = 2; //file is modified
             }
             else if (sg[i].segid == 65535) { //file inner $FFFF header can be cancelled
-                re.splice(sg[i].offset, 2);
+                re.splice(sg[i].offset, 2); //cancel 2 bytes at sg[i].offset
+                sg.splice(i, 1); //cancel the segment
+                for (var j = i; j < sg.length; j++ ) {
+                    sg[j].offset -= 2; //shift all offsets from 2 bytes
+                }
                 console.log(" >segs_merging => has cancelled inner $FFFF header");
                 mod = 1; //file is modified
             }
-            else if (!sg[i].start && !sg[i].end && i > 1) { //start & end address are $0000
-                re = re.slice(0, sg[i].offset - 4);
+            else if (!sg[i].start && !sg[i].end && i > 1 && i == (sg.length - 1)) { //start & end address are $0000 (only for last segment)
+                re = re.slice(0, sg[i].offset - 4); //remove last 4 bytes from the data file buffer
                 console.log(" >segs_merging => has cancelled $0000:$0000 segment");
-                if (i == sg.length - 1) {
-                    sg.pop(); //remove it
-                    mod = 2;
-                } 
-                else mod = 1; //file is modified
+                sg.pop(); //remove it from seg array
+                mod = 2;
             }
             else {
                 gp = sg[i].start - sg[i-1].end - 1; //this is the gap to merged between consecutive segment
-                if (gp > 0 && gp <= 128 && sg[i-1].end > 0x480 && sg[i].start < 0xC000) { //there is a valid gap to fill by 00 and merged => MAX 128 BYTES ($80)
+                if (gp >= 0 && gp <= 128 && sg[i-1].end > 0x480 && sg[i].start < 0xC000) { //there is a valid gap to fill by 00 and merged => MAX 128 BYTES ($80)
                     console.log(" >segs_merging => has found a segment to merge with a gap of " + gp + " bytes");
                     re[sg[i-1].offset - 2] = re[sg[i].offset - 2]; //replace old end by new end, LSB
                     re[sg[i-1].offset - 1] = re[sg[i].offset - 1]; //replace old end by new end, MSB
-                    var gpb = Array(gp); //set the empty buffer, size is gp (gap size)
-                    gpb.fill(0); //fill it with 00
-                    //var lp = re.slice(sg[i].offset, (sg[i].offset + sg[i].len)); //save last part of file data
-                    var lp = re.slice(sg[i].offset, sg[sg.length - 1].offset + sg[sg.length - 1].len); //save last part of file data
-                    re = re.slice(0, (sg[i-1].offset + sg[i-1].len)); //keep the first part of file data
-                    re = re.concat(gpb); // add the 00 data buffer after the first part
-                    re = re.concat(lp); // then add the last saved part
+                    if (gp) {
+                        var gpb = Array(gp); //set the empty buffer, size is gp (gap size)
+                        gpb.fill(0); //fill it with 00
+                        //save last part of file data, after the header of seg[i]
+                        var lp = re.slice(sg[i].offset, sg[sg.length - 1].offset + sg[sg.length - 1].len);
+                        //keep the data up to the last segment (i-1), cancelling the segment (i) header
+                        re = re.slice(0, (sg[i-1].offset + sg[i-1].len));
+                        re = re.concat(gpb); // add the 00 data gap buffer just after the first part
+                        re = re.concat(lp); // then add the last previpus saved part
+                    }
+                    else { //gap is zero byte, just cancel the segment (i) header of 4 bytes
+                        re.splice(sg[i].offset -4, 4); //cancel 2 bytes at sg[i].offset
+                    }
+                    sg.splice(i, 1); //cancel the segment
+                    for (var j = i; j < sg.length; j++ ) {
+                        sg[j].offset = sg[j].offset - 4 + gp ; //shift all offsets from 4 bytes (header) added by the new gap bytes
+                    }
                     console.log(" >segs_merging => has merge the two segments now from $" + hdx(sg[i-1].start) + " to $" + hdx(sg[i].end));
                     mod = 1; //file is modified
                 }
-                else if (gp == 0) { //the silly digdug stuff
-                    console.log(" >segs_merging => has found a segment to merge without gap");
-                    re[sg[i-1].offset - 2] = re[sg[i].offset - 2]; //replace old end by new end, LSB
-                    re[sg[i-1].offset - 1] = re[sg[i].offset - 1]; //replace old end by new end, MSB
-                    re.splice(sg[i].offset - 4, 4); //remove the 4 bytes segment header
-                    mod = 1;
-                }
             }
-            if (mod == 1) { //get all new information of modified file
-                var an = new Uint8Array(re); //create new uint8 data file
-                sg = get_xex_segs(an, 0, an.length); //and gets all new modified segs
-                re = []; //clear the temp buffer
-                an.forEach((b) => re.push(b)); //set the temp buffer
-                i = sg.length - 1; //and reset i to the last segment[i] for the loop
-                opt = true; //keep in mind that the main file has been modified
+            if (mod == 1) { //mod==1
+                i = sg.length - 1; //reset i to the last segment index of the segs array (reset the loop)
+                opt = true; //keep in mind that the main file has been modified (i.e. merged)
             }
-            else {
-                if (mod == 2) opt = true; //keep in mind that the main file has been modified
-                i--; //no mod or mod==2, check previous segment of segs
+            else { //no mod or mod==2
+                i--; //check previous segment of segs array
+                if (mod == 2) opt = true; //keep in mind that the main file has been modified (i.e. merged)
             }
             mod = 0;  
         }
-        //return new merged uint8 data file if optimisation OK, null if nothing to merge or optimize found
+        //returns new merged uint8 data file if modif/merging is OK; returns null if nothing to merge nor optimization found
         return (opt ? new Uint8Array(re) : null);
     } 
     //(PVB end of ADD)
@@ -9958,12 +9978,12 @@
                 <i><b>Ctrl+H</b> toggles Hex View</i><br />
                 <i><b>Shift+Click</b> opens Keyboard in Editor</i><br />
             </p>
-            <div style="font-size: xx-small;color: #99C;text-align: center;">APRIL 2025 VERSION<br />by PVBest</div>
+            <div style="font-size: xx-small;color: #99C;text-align: center;">MAY 2025 VERSION<br />by PVBest</div>
             <input type="file" id="fe" multiple style="display:none" aria-label="Drag files here">
         </nav>
         <main style="border:solid 1px #CCC">
             <div id="tabs"></div>
-            <div id="hexedframeid" style="height: 0px;"></div>
+            <div id="hexedframeid" style="height: 0px; min-width: 610px;"></div>
         </main>
     </div>
     <script>load()</script>
