@@ -18,6 +18,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: 140px;
   }
   table, td {
     border-collapse: collapse;
@@ -36,10 +37,10 @@
     font-family: 'Noto Sans Mono', monospace;
     font-size: 12px;
     line-height: 12px;
-  }
-  #w { /*trick for not display the standard text and "select a file" button for the input type="file"*/
-    position:absolute;
-    opacity:.001;
+    margin-left: -1px;
+    margin-right: -1px;
+    padding-left: 1px;
+    padding-right: 1px;
   }
   button, label {
     font-family: 'Noto Sans Mono', monospace;
@@ -51,7 +52,7 @@
   }
 </style>
 <script>
-  /* ATARI 8-bits HEX EDITOR by PVBest Infoo, April 2025             /
+  /* ATARI 8-bits HEX EDITOR by PVBest Infoo, May 2025             /
   /  based upon the great code of https://github.com/xem/hex         /
   /  works within a frame of atari8-bit_rom_image_file_explorer.html*/
   var _tmpbuffsize = 0; //temporay size of the temp byte buffer
@@ -667,15 +668,13 @@
 </head>
 <body onload="bodyOnLoad_Init()">
 
-  <!-- <div><input id="w" type="file" onchange="inputOnChange_Load()" aria-label="load"><button>load</button></div>-->
-  <!-- <div><button onclick="button_Save()">save</button></div>-->
   <div style="text-align: center;"><b>Welcome to Atari 8-bit Rom Image File Hex Editor!</b><br />Click on a sector or block number to Edit - Click M tool to exit</div>
   <div id="first_table" style="display: none;">
     <table class="list_table">
         <tr style="background-color: #ddf;">
-          <td width="120">Click to Edit<br />Sector/Block</td>
+          <td width="140">Click to Edit<br />Sector/Block</td>
           <td width="330">Byte Hex Dump<br />00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F</td>
-          <td width="132" style="text-align: center; vertical-align: middle;"><label for="swAta1"></label><button id="swAta1" name="swAta1" onclick="switchAscii()">ASCII CHAR DISPLAY</button></td>
+          <td width="140" style="text-align: center; vertical-align: middle;"><label for="swAta1"></label><button id="swAta1" name="swAta1" onclick="switchAscii()">ASCII CHAR DISPLAY</button></td>
         </tr>
         <tr>
           <td id="ic11" style="text-align: end;"></td>
@@ -696,9 +695,9 @@
         </td>
       </tr>
       <tr style="background-color: #ddf;">
-        <td id="disp_block" width="120" style="font-weight: bold;">#xxx</td>
+        <td id="disp_block" width="140" style="font-weight: bold;">#xxx</td>
         <td width="330">00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F</td>
-        <td width="132" style="text-align: center; vertical-align: middle;"><label for="swAta2"></label><button id="swAta2" name="swAta2" onclick="switchAscii()">ASCII CHAR DISPLAY</button></td>
+        <td width="140" style="text-align: center; vertical-align: middle;"><label for="swAta2"></label><button id="swAta2" name="swAta2" onclick="switchAscii()">ASCII CHAR DISPLAY</button></td>
       </tr>
       <tr>
         <td id="disp_line" style="text-align: end;">00&gt</td>
@@ -734,9 +733,9 @@
   <div id="end_table" style="display: block;">
     <table class="list_table">
       <tr style="background-color: #ddf;">
-        <td width="120">Click to Edit<br />Sector/Block</td>
+        <td width="140">Click to Edit<br />Sector/Block</td>
         <td width="330">Byte Hex Dump<br />00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F</td>
-        <td width="132" style="text-align: center; vertical-align: middle;"><label for="swAta3"></label><button id="swAta3" name="swAta3" onclick="switchAscii()">ASCII CHAR DISPLAY</button></td>
+        <td width="140" style="text-align: center; vertical-align: middle;"><label for="swAta3"></label><button id="swAta3" name="swAta3" onclick="switchAscii()">ASCII CHAR DISPLAY</button></td>
       </tr>
         <tr>
           <td id="ic31" style="text-align: end;"></td>
