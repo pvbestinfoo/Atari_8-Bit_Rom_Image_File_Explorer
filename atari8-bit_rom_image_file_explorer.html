@@ -1370,20 +1370,19 @@
 
     function pack_img(indexes, pal, ext) {
         var dst = 0;
-        var bpp = 2;
+        var bpp = 2; //bit per pixel: default for 'gr7', 4 colors
         switch (ext) {
-            case 'gr8':
-                bpp = 1;
+            case 'gr8': //black & white
                 break;
             case 'gr9':
             case 'g10':
-                bpp = 4;
+                bpp = 4; //16 colors
                 break;
         }
         var ppb = 8 / bpp;
         var pal_len = pal ? pal.length : 0;
         var d = new Uint8Array(indexes.length / ppb + pal_len);
-
+        console.log(" >pack_img() => bpp=" + bpp + "; ppb=" + ppb + "; buffer d=" + d.length + " bytes");
         for (var i = 0; i < indexes.length;) {
             var b = 0;
             for (var j = 0; j < ppb; j++) {
@@ -1449,7 +1448,7 @@
 
     var _mono_cr = 0;
     function convert_image(canvas, f, pal, reload) {
-        //if (f.name.indexOf(".rgb") != -1)
+        //if (f.name.indexOf(".rgb") != -1) //TODO Manage the RGB file ?
             //return show_rgb(canvas,f);
 
         var dither = _radios["dither"].value;
@@ -1498,7 +1497,7 @@
                 pal_size = f.ext == 'g10' ? 9 : 0;
                 break;
         }
-
+        console.log(" >convert_image() => PaletteSize=" + bpal_size + "; width=" + width + "; height=" + height);
         canvas.width = width;
         canvas.height = height;
         var ctx = canvas.getContext('2d');
@@ -2174,7 +2173,7 @@
             if (gr == 32 && offset == 40)
                 src += 40;
         }
-
+        console.log(" >render_image() => BufferSize=" + buf.length + "; width=" + width + "; height=" + height);
         var brightness = 1;
         switch (ext) {
             case "rip_mode_16": brightness = 3; break;    // rip_mode_16,raw is dark, boost it please
@@ -5046,22 +5045,30 @@
             s += String.fromCharCode(a[i++] & 0x7F); //(PVB MOD) add the 0x7F mask to force the inverted Atari char into normal ($80-$FF => $00-$7F)
         return s;
     }
-    
-    //(PVB ADD) isAtariNameChar(str, md) function used in one_dir() to check if the DOS filename is valid
-    function isAtariNameChar(str, md) { //isAtariText // valid filename char are 'space' 0-9 A-Z a-z; and '@' and '_' for myDOS fileName
-        var er = 1;
-        if (str[0] == 0x20 || (str[0] >= 0x30 && str[0] <= 0x39)) er = -1; // invalid filename because starts with a 'space', or by a number
-        for (var i = 0; i < str.length; i++) {
-            if (str[i] & 0x80) er = -1; //use of unsual inverted chars (not a guenuine DOSx filename)
-            var c = str[i] & 0x7F; //convert inverse char
-            if (!(c == 0x20 || (c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A))) { //not OK if not alphabet
-                if (c == 0x2A || c == 0x2D || c == 0x2E)
-                    er = -1; //unsual '*', '-' and '.' chars, not in genuine DOSx filename
-                else if (!(md && (c == 0x40 || c == 0x5F)))
-                    return 0; //not OK if not '@' or '_' (for myDOS fileName)
+    //(PVB ADD) checkCharInName(d, md) function used in one_dir() to check if the DOS filename is valid
+    function checkCharInName(d, md) { //d is the data array of the 11 bytes of the filename, md is true if this should be a myDOS fileName
+        var len = d.length; //start at end of extension position
+        var isIC = false; //inverted char ?
+        var isND = false;  //non DOS char ?
+        var firstLT = false; //first Letter (not Space) in the name
+        while (len-- > 0) {
+            if (len == 7 || len == 10) firstLT = false; //reset firstLT at end of name position
+            if (d[len] & 0x80) isIC = true; //inverted char ?
+            var c = d[len] & 0x7F; //set normal char for easy check
+            if (c < 0x20 || c >= 0x7D) return 0; //control char, EXIT
+            //we allow space only at end of extension or at the end of name
+            if (c != 0x20) firstLT = true; //first char (non space) 
+            else { //it is a space
+                if (firstLT) isND |= true; //space before char: it is non-DOS char/name
+                continue; //do nothing else (skip the space char)
             }
+            if (!(c >= 0x30 && c <= 0x39) && !(c >= 0x41 && c <= 0x5A) && !(c >= 0x61 && c <= 0x7A)) { //not a standard DOS char
+                if (!((c == 0x40 || c == 0x5F) && md)) //not a '@' or '_' for myDOS fileName
+                    isND |= true;  //then it is non-DOS char/name
+            } //else good char
+            if (len == 0 && (c == 0x20 || c >= 0x30 && c <= 0x39)) isND |= true; //a space at name start, or a number => non DOS name
         }
-        return er;
+        return (!isIC && !isND && firstLT ? 1 : -1); //return 1 as OK if no inverted char, DOS char, and at least one non-space char
     }
     //(PVB END OF ADD)
 
@@ -5657,12 +5664,12 @@
                 }
                 else { //(PVB) in case of there are some segments found
                     //(PVB) save this last not-OK segment with the segs.ers error text and return
-                    ers = "Code segment #" + segnum + " ERROR! $[" + hex(start,4) + ":" + hex(end,4) + "] (offset $" + hdx(i-4) + ")";
+                    ers = "Code segment #" + segnum + " ERROR! $[" + hex(start, 4) + ":" + hex(end, 4) + "] (offset $" + hdx(i-4) + ")";
                     if (slen < 1)
                         ers += ": segment start address is greater that end address!";
                     if (i + slen > e) {
-                        ers += ": $" + hdx(slen) + " bytes required, but only $" + hdx(e-i) +" bytes left in file!"
-                        ers += "\n;  ($"+ hdx(i+slen - e) +" bytes are missing in file; expected file size should be $" + hdx(i+slen) + ")";
+                        ers += ": $" + hdx(slen) + " bytes required, but only $" + hdx(e-i) +" bytes left in file!\n;  ";
+                        ers += "($"+ hdx(slen - e+i) +" missing bytes; $" + hdx(i+slen) + " expected file size; current end address is $" + hex(start + e-i-1, 4) + ")";
                     }
                     break;
                 }
@@ -5843,7 +5850,7 @@
             segs.forEach(seg => {
                 //(PVB MOD) Adding the hyperlinks display
                 var stmp = seg.segid; //(PVB COM) segment display
-                if (seg.segid != 0xFFFF) { //&& !seg.ers) { //(PVB COM) if segment number is not the header, and not a faultly not-displayable segment
+                if (seg.segid != 0xFFFF && !seg.ers) { //(PVB COM) if segment number is not the header, and not a faultly not-displayable segment
                     lines.push(_hr);
                     s = "<span id='FWTOSEG" + stmp + "'>; Code segment \#" + stmp + "<a href='#BKTOSEG" + stmp + "'>(back)</a></span>";  // hyperlink to the segement
                     s = s + ": $" + hdx(seg.len) + " (" + seg.len + ") bytes at $" + hex(seg.start, 4) + ":" + hex(seg.end, 4); // (PVB) hexa $ and value display
@@ -6667,16 +6674,23 @@
         one_dir(n, sector, idf, subdirname) {// one_dir() is called by get_dir_range() and scan_files()
             // (PVB COM) 'n' is the dir entry from 1 to 8 (or 1 to 16 in DD & DSDD disk) into the directory sector; idf is the count of file (file number in the directory)
             // that is also use in DOS file sector control byte; "subdirname" parameter is the name of the parent's MyDOS subdirectory
-            var m = 32; //(PVB CONSOLE HINT) limits the consolelog event display for the 32 first directory entry
+            var m = 64; //(PVB CONSOLE HINT) limits the consolelog event display for the 64 standard DOS directory entries
             var d = this.d;
             var j = this.sector_offset(sector) + n * 16; //index in the memory for the beginning entry position number "n"
             var dirEntry = [];
             var dosVtocArray = []; //VTOC table of the DOS 3 (sector 24) or DOS 4 (this.vtoc1_sect) //WIPDOS// put dosVtocArray as a global atr variable instead to set it at each one_dir() call ??
             var tdos = this.dosType; // here tdos is 1 to 4 for DOS1 to DOS4; and 6 to 8 for MyDOS
-            //check if entry is 16 zero bytes
+            function rems(odf, type, txt) {
+                return (odf ? " one_dir()=>" : "  ..." ) + type + "! File#" + idf + " " + txt; //error message
+            }
+            function strSect(n) {
+                return n + " sector" + (n > 1 ? "s" : "");
+            }
+            //check if entry is 16 bytes of $00 nul value, the entry is then empty
             if (is_zero(d, j, 16)) { //function is_zero() returns true if there is len 00 bytes from d[j]
-                if (idf < m) console.log(" one_dir() =>Error! File#" + idf + " entry is $00 bytes into DOS TOC!"); //(PVB CONSOLE HINT)
-                else console.log(" one_dir() =>Error! Entry is $00 bytes into DOS TOC!");
+                //if (idf < m) console.log(" one_dir() =>Error! File#" + idf + " entry is $00 bytes into DOS TOC!"); //(PVB CONSOLE HINT)
+                if (idf < m) console.log(rems(1, "no directory entry", `>empty $00 bytes into DOS TOC!`)); //(PVB CONSOLE HINT)
+                else console.log(" one_dir() =>no directory entry found out of DOS TOC!");
                 return dirEntry; //no dir entry, 16 times $00 bytes found on the dir entry
             } 
             if (tdos == 3) { // for DOS 3
@@ -6718,176 +6732,210 @@
                 start: le16(d, j +3), // Byte 3-4 : Starting sector number of the DOS file.
                 fsize: 0, // filesize in bytes default value 0 : dirEntry.fsize will be compute with the read_file() result in load_data()
                 name83: toAscii(d, j +5, 11), // Byte 5-15 : 11 char = 8 character filename with spaces at end + 3 character filename extension padded with spaces at end
-                name: toAscii(d, j +5, 8).trim(), // Byte 5-12 : 8 character filename without spaces at end
-                ext: toAscii(d, j +13, 3).trim(), // Byte 13-15 : 3 character filename extension without spaces at end
+                name: toAscii(d, j +5, 8).trimEnd(), // Byte 5-12 : 8 character filename without spaces at end
+                ext: toAscii(d, j +13, 3).trimEnd(), // Byte 13-15 : 3 character filename extension without spaces at end
                 dir_name: subdirname ? subdirname : "" //add parent's name if in a subdirectory (for MyDOS)
                 };
             if (dirEntry.ext)
                 dirEntry.name += '.' + dirEntry.ext; //"name" is like "dup.sys", without space but with ".ext"
             //(PVB MOD & ADD) Improvement of DOS file detection and validation
-            dirEntry.valid = 2; //1 is valid (readable) and to be listed with error, 0 is not valid, 2 is OK fully valid (no error)
-            //following 2 conditions to check are the minimum to get a file from the dir entry: a valid name & a consistant start sector
+            //dirEntry.valid: 1 is valid (readable) and can be listed with error (but not read), 0 is not valid (not listed), 2 is OK fully valid (no error, so displayed in the official blue DIR)
+            dirEntry.valid = 2; //assume it is fully valid
             var title = (tdos != 3) ? d.slice(j +5, j +16) : d.slice(j +1, j +12); //name in an Ascii byte array
-            var isName = isAtariNameChar(title, this.dosType >= 7); //is that name is valid with atari char text ?
-            if (is_zero(d, j, 16)) {
-                dirEntry.valid = 0;
-                if (idf < m) //(PVB CONSOLE HINT)
-                    console.log(" one_dir() =>Error! File#" + idf + ": has only zero into DOS TOC entry!"); //(PVB CONSOLE HINT)
-            }
-            else if (!isName) {
-                dirEntry.valid = 0;
-                if (idf < m) //(PVB CONSOLE HINT)
-                    console.log(" one_dir() =>Error! File#" + idf + ": has a name with invalid chars!"); //(PVB CONSOLE HINT)
+            var isName = checkCharInName(title, this.dosType >= 7); //return null if name is invalid, -1 if name is non-DOS, 1 if name is OK //previously isAtariNameChar()
+            //(PVB COM) following 2 conditions to check are the minimum to get a file from the dir entry: a valid name & a consistant start sector
+            if (!isName) { //isName null
+                dirEntry.valid = 0; //not a valid entry
+                if (idf < m) console.log(rems(1, "ERROR", `>filename has invalid chars!`)); //(PVB CONSOLE HINT)
             }
             else if ((dirEntry.start < this.file_start) || (dirEntry.start > this.sector_count)) {
-                dirEntry.valid = 0;
-                if (idf < m) //(PVB CONSOLE HINT)
-                    console.log(" one_dir() =>Error! File#" + idf + ": inconsistent start sector! ($" + hex(dirEntry.start, 3) + ")"); //(PVB CONSOLE HINT)
+                dirEntry.valid = 0; //not a valid entry, if start sector is not OK, we can not go further, file maybe found by scan_files() as FILE_XX.DAT
+                if (idf < m) console.log(rems(1, "ERROR", `>file has inconsistent $${hex(dirEntry.start, 3)} start sector!`)); //(PVB CONSOLE HINT)
             }
-            if (!dirEntry.valid) return [];
-            //dir.total is checked below while reading sectors of the file
+            if (!dirEntry.valid) return []; //EXIT
+            //(PVB COM) dir.total is checked below while reading sectors of the file
             //here filename is valid start sector is OK
             dirEntry.gname83 = ''; //original filename, eventually with inverted char (not DOSx compatible)
             title.forEach(c => dirEntry.gname83 += String.fromCharCode(c)); //original filename is set from 'title'
-            dirEntry.erf = ''; // text of error in case of
+            dirEntry.erf = ''; // to save and display the file issue/error
             if (isName < 0) {
-                dirEntry.erf += " >not genuine DOSx filename with special char!";
-                if (idf < m) //(PVB CONSOLE HINT)
-                    console.log(" one_dir() =>Warning! File#" + idf + " '" + dirEntry.name + "'" + dirEntry.erf); //(PVB CONSOLE HINT)
+                dirEntry.erf += " >non-DOS2x char in filename";
+                if (idf < m) console.log(rems(1,"WARNING", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT)
             }
-            if (d[j] == 0x80) { //$80 byte flag is deleted, as per DOS1, DOS2, DOS3 and DOS4
-                dirEntry.erf += " >deleted file ($80 flag)"
-                if (idf < m) //(PVB CONSOLE HINT)
-                    console.log(" one_dir() =>Info: File#" + idf + ": " + dirEntry.name + " is a deleted file that could be wrong!"); //(PVB CONSOLE HINT)
+            if (d[j] == 0x80) { //$80 byte flag is "file deletedé, as per DOS1, DOS2x, DOS3 and DOS4
+                dirEntry.erf += " >DOS deleted file";
+                if (idf < m) console.log(rems(1, "WARNING", `'${dirEntry.name}'${dirEntry.erf}, file could be lost...`)); //(PVB CONSOLE HINT)
             }
             else if (tdos > 5 && d[j] & 0x10 && dirEntry.total == 8) { //MyDOS subdirectory handling (flag = 0x10, 8 sectors length)
-                dirEntry.is_dir = true;  //it's a MyDOS subdirectory
+                dirEntry.is_dir = true; //it's a MyDOS subdirectory
                 dirEntry.sectors = []; //add subdir sectors
                 var s = dirEntry.start;
-                for (var k = 0; k < 8; k++) dirEntry.sectors[s+k] = { sector: s+k, slen: this.sector_size, snext: 0, fbloc: k }; //sectors init
-                if (idf < m) //(PVB CONSOLE HINT)
-                        console.log(" one_dir() =>We have found the #" + idf + "'" + dirEntry.name + "' subdirectory!"); //(PVB CONSOLE HINT)
+                for (var k = 0; k < 8; k++) {
+                    dirEntry.sectors[s+k] = { sector: s+k, slen: this.sector_size, snext: 0, fbloc: k }; //sectors init
+                }
+                console.log(rems(1, "INFO", `>found that '${dirEntry.name}' is a MyDOS valid subdirectory!`)); //(PVB CONSOLE HINT)
+                //console.log(" _one_dir() =>We have found the MyDOS #" + idf + "'" + dirEntry.name + "' subdirectory!"); //(PVB CONSOLE HINT)
                 return dirEntry;
             }
-            else { //standard file, not deleted
+            else { //standard file, not deleted, and not a MyDOS subdirectory
                 if (tdos == 3 && !(d[j] & 0xC0)) { //$C0 is the valid flag for DOS3
                     dirEntry.valid = 1; //readable, but wrong ?
-                    dirEntry.erf += " >DOS3 dir entry not valid (no $0C flag)!"
-                    if (idf < m) //(PVB CONSOLE HINT)
-                        console.log(" one_dir() =>Error! File#" + idf + ": " + dirEntry.name + " (DOS3) is not existing (no 0xC0 flag)!"); //(PVB CONSOLE HINT)
+                    dirEntry.erf += " >DOS3 dir entry not valid (no $0C flag)";
+                    if (idf < m)
+                        console.log(rems(1, "WARNING", `'${dirEntry.name}'${dirEntry.erf}, file does not exits`)); //(PVB CONSOLE HINT)
+                        //console.log(" _one_dir() =>Error! File#" + idf + ": " + dirEntry.name + " (DOS3) is not existing (no 0xC0 flag)!"); //(PVB CONSOLE HINT)
                 }
                 if ((d[j] & 0x41) == 0x41) { //$41 means not deleted and Open, applies to DOS2x, DOS3, DOS4 & MysDOS
-                     dirEntry.erf += " >non-closed file (open-for-writing flag)!";
-                    if (idf < m) //(PVB CONSOLE HINT)
-                        console.log(" one_dir() =>Info: File#" + idf + ": " + dirEntry.name + " is a non-closed file that is open for writing, so may be wrong!"); //(PVB CONSOLE HINT)
+                     dirEntry.erf += " >file not closed (open-for-writing flag)";
+                    if (idf < m)
+                        console.log(rems(1, "INFO", `'${dirEntry.name}'${dirEntry.erf}, file may be wrong...`)); //(PVB CONSOLE HINT)
+                        //console.log(" _one_dir() =>Info: File#" + idf + ": " + dirEntry.name + " is a non-closed file that is open for writing, so may be wrong!"); //(PVB CONSOLE HINT)
                 }
             }
             if (!dirEntry.valid) return dirEntry; //returns an empty dirEntry if non valid
             // get all sectors associated with this entry & check validity
             dirEntry.sectors = []; //initialisation of the DOS file sector table
-            var num = -1; //init of the file number index
-            var next = -1; //init of next sector
-            var len = -1; //init of bytes per sector
-            var sector = 0;
+            var len = 0; //init of bytes per sector
+            var next = 0; //init of next sector
+            var num = 0; //init of the file number index
+            var fmsid = -1; //init original DOS id
+            var nsector = 0;
             var nextbloc = -1;
-            if (tdos != 3 && tdos != 4) { //for standard DOS (not DOS3) (nota for MyDOS, tdos is 6, 7 or 8)
-                sector = dirEntry.start; //current sector is the first one
-                if (dirEntry.total) {
-                    console.log(" one_dir() =>File#" + idf + ": DOS1/DOS2x/MyDOS '" + dirEntry.name + "' reading sectors...");
-                    for (var k = 0; k < dirEntry.total; k++) { //up to the total number of block (sector)
-                        var end = this.sector_offset(sector) + this.sector_size; //end of file pointer
-                        len = d[end - 1]; //len of data in the sector is set in the last byte of the sector
-                        if (tdos == 7 || tdos == 8) { //MyDOS 16 bits next sector
-                            next = d[end-3] * 256 + d[end-2];
-                            if ((!dirEntry.flag & 0x04) && k == 0) { //check only for first sector
-                                //MyDOS 16bit sector chain flag not set in dir entry  ($04) but we continue as 16 bit chaining is used by default for MyDOS
-                                console.log(" one_dir() =>Info! File#" + idf + ": MyDOS 16bits sector chain flag in " + dirEntry.name + " file directory entry not set!");
-                            }    
+            var fcs = " =>file corrupted!";
+            var doss = tdos > 4 ? "MyDOS" : ("DOS" + tdos);
+            var nbrsect = dirEntry.total;
+            console.log(" one_dir()=>File#" + idf + " >" + doss + " '" + dirEntry.name + "' entry check... "); //error message)
+            if (tdos != 3 && tdos != 4) { //for standard DOS (not DOS3) (nota for MyDOS, tdos can be 6, 7 or 8)
+                var md16 = (tdos == 7 || tdos == 8); //MyDOS 16 bits not-DOS2x compatible
+                nsector = dirEntry.start; //current sector is the first one
+                if (dirEntry.total == 0) console.log(rems(0, "INFO", `'${dirEntry.name}' is zero byte length from the directory entry number of blocks!`)); //(PVB CONSOLE HINT)
+                var dosOne = tdos == 1;
+                var scnt = 1; //file sector counter
+                console.log("  ...File#" + idf + " >" + doss + " '" + dirEntry.name + "' reading sector chain...");
+                while (true) {
+                //for (var k = 0; k < nbrsect; k++) { //up to the total number of block (sector) set in the dir entry
+                    var clbp = this.sector_offset(nsector) + this.sector_size - 1; //current sector last byte pointer
+                    //get file sector FMS bytes
+                    len = d[clbp]; //the last byte of the sector if the number of data bytes in the sector
+                    next = ((d[clbp - 2] & 0x3) << 8) | d[clbp - 1];
+                    num = d[clbp - 2] >> 2;
+                    if (len + next + num == 0) { //FMS bytes are null =>empty sector ? file is corrupted
+                        dirEntry.valid = 1;
+                        dirEntry.erf += " >FMS bytes null @ start sector " + nsector;
+                        if (scnt == 1) dirEntry.erf += " =>no file!";
+                        else dirEntry.erf += " (" + strSect(scnt-1) + " read)" + fcs;
+                        console.log(rems(0, "ERROR", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT)
+                        break;
+                    }
+                    if (scnt == 1 && num != idf && nbrsect == 0) { //non-closed file => at the first sector, if the DOS Id num is wrong, and if no sector in the file then EXIT
+                        dirEntry.valid = 1;
+                        dirEntry.erf += " >file start @" + nsector + " overwritten by file Id#" + num + " =>no file!";
+                        console.log(rems(0, "ERROR", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT)
+                        break;
+                    }
+                    if (!md16 && fmsid == -1) { //first iteration..
+                        fmsid = num; //.. set the file number from the MSB byte of the first sector
+                        console.log("  ...OK! file DOS Id is #" + fmsid +"...");
+                    }
+                    if (!dosOne && scnt == 1 && this.sector_size == 128) { //check if it's a DOS1 file on a DOS2x disk
+                        if ((next && len == 0 && dirEntry.total > 1) || (!next && (len & 0x80) && dirEntry.total == 1)) { //case for a first sector of a DOS1 file // or a single sector DOS 1 file
+                            dosOne = true;
+                            dirEntry.erf += " >DOS1 file";
+                            console.log("  ...file seems to be a DOS1 file");
                         }
-                        else {
-                            next = ((d[end - 3] & 0x3) << 8) | d[end - 2];
-                            if (num == -1)  //first issue...
-                                num = d[end - 3] >> 2; //.. set the file number from the MSB byte of the first sector
-                            if (num != idf || num != (d[end - 3] >> 2)) { //file number in the MSB index of the next sector is not right or has changed
-                                //(PVB TODO) add information according to conditions
-                                if (dirEntry.flags == 0x80 && k == 0) {
-                                    dirEntry.valid = 1;
-                                    if (dirEntry.dir_name) //exit Loop if the deleted file is in a MyDOS subdirectory, because the overwritting check does not work
-                                        console.log(" one_dir() =>Deleted MyDOS subdirectory file#" + idf + " is not valid!");
-                                    else { //not in a subdirectory, so the overwritting check can be done
-                                        dirEntry.erf += " >file overwritten by file #" + num +" >file unrecovarable!";
-                                        console.log(" one_dir() =>Error! File#" + idf + ": DOS2x/MyDOS " + dirEntry.name + " has been overwritten by file #" + num + " in sector " + sector +"!");
-                                    }
-                                    break; //exit loop
-                                }
-                                else {
-                                    dirEntry.valid = 1;
-                                    dirEntry.erf += " >wrong file id in FMS byte at sect." + sector +" >" + k + " sect. read >file corrupted!";
-                                    console.log(" one_dir() =>Error! File#" + idf + ": DOS2x/MyDOS " + dirEntry.name + " has wrong file number #" + num + " in sector " + sector +" after " + k + " sectors!");
-                                    break; //exit loop
-                                }
-                            }
+                    }
+                    if (md16) { //MyDOS 16 bits not-DOS2x compatible, no use of file Id
+                        next = d[clbp-2] * 256 + d[clbp-1]; //MyDOS next sector computation on 16 bits
+                        if ((!dirEntry.flags & 0x04) && scnt == 1) { //check if MyDOS dir at first sector
+                            //MyDOS 16bit sector chain flag not set in dir entry  ($04) but we continue as 16 bit chaining is used by default for MyDOS
+                            console.log(rems(0, "WARNING", `>MyDOS 16bits sector chain flag in '${dirEntry.name}' in directory file entry is not set!`)); //(PVB CONSOLE HINT)
                         }
-                        if (tdos != 1) { 
-                            var is_good_len = (next == 0) ? (len <= (this.sector_size - 3) && len) : len == (this.sector_size - 3);
-                            //is_good_len = true if (end sector && length of data to read is <= (sector size - 3) and not zero) or 
-                            // (not end sector and length of data to read is = (sector size - 3))
-                            if (!is_good_len) {
+                    }
+                    else { //Standard DOS or MyDOS with DOS2 compatible //use of file Id
+                        if (num != idf || num != fmsid) { //file number in the MSB index of the next sector is not right or has changed
+                            if (dirEntry.flags == 0x80 && scnt == 1) { //if file deleted, on its first sector, check if it is still its DOS file number...
                                 dirEntry.valid = 1;
-                                dirEntry.erf += " >wrong length in FMS byte at sect." + sector + " >file corrupted!";
-                                console.log(" one_dir() =>Error! File#" + idf + ": DOS2x/MyDOS " + dirEntry.name + " has wrong byte_length (" + len + ") in sector " + sector +"!");
+                                if (dirEntry.dir_name) {//exit Loop if the deleted file is in a MyDOS subdirectory DOS2 compatible, because the overwritting check does not work
+                                    dirEntry.erf += " >file Id#" + idf + " is in MyDOS subdir =>cannot be checked!";
+                                }
+                                else { //not in a subdirectory, so the overwritting check was valid
+                                    dirEntry.erf += " >file start @" + nsector + " overwritten by file Id#" + num + " =>file unrecoverable!";
+                                }
+                                console.log(rems(0, "WARNING", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT)
+                                break; //exit loop
+                            }
+                            else { //not deleted a file, or scnt is not at first sector
+                                dirEntry.valid = 1;
+                                dirEntry.erf += ` >bad DOS file Id#${num} in FMS @${nsector}, ${scnt == 1 ? "no sector" : strSect(scnt-1)} read${fcs}`;
+                                console.log(rems(0, "WARNING", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT)
                                 break; //exit loop
                             }
                         }
-                        else { //else if (tdos == 1) //(PVB TODO) count the file sector in len if z set
-                            if (len & 0x80) { //check Z : if set, it is the last sector of DOS1 file
-                                if (next) {
-                                    dirEntry.valid = 1;
-                                    dirEntry.erf += " >DOS1 Z bit set in the FMS byte!";
-                                    console.log(" one_dir() =>Error! File#" + idf + ": DOS1 " + dirEntry.name + " has Z bit set in last sector " + sector +"!");
-                                    break; //exit loop
-                                }
-                            }
-                            else { //if Z clear, we are not in the last sector of DOS1 file (PVB TODO) : count the file sector in len...
-                                len = this.sector_size - 3; //that is $7F
-                                if (!next) {
-                                    dirEntry.valid = 1;
-                                    dirEntry.erf += " >DOS1 Z bit cleared in FMS byte!";
-                                    console.log(" one_dir() =>Error! File#" + idf + ": DOS1 " + dirEntry.name + " has Z clear and no next sector in sector " + sector +"!");
-                                    break; //exit loop
-                                }
-                            }
-                            len &= 0x7F; //any way clear the bit 8
-                        }
-                        if (next > this.sector_count) {
-                            //next is above last sector of disk
+                    }
+                    if (!dosOne) {  //Note DOS 1, that is standard DOS number of bytes in sector in len variable
+                        var is_good_len = (next == 0) ? (len <= (this.sector_size - 3) && len) : len == (this.sector_size - 3);
+                        //is_good_len = true IF (end sector AND& length of data to read is <= (sector size - 3) AND not zero) OR (NOT end sector AND length of data to read is = (sector size - 3))
+                        if (!is_good_len) {
                             dirEntry.valid = 1;
-                            dirEntry.erf += " >wrong next sector in FMS bytes at sect." + sector + " >file corrupted!";
-                            console.log(" one_dir() =>Error ! File#" + idf + ": DOS2x/MyDOS " + dirEntry.name + " has wrong next_sector (" + next + ") in sector " + sector +"!");
+                            dirEntry.erf += " >bad data length $" + hdx(len) + " in FMS @" + nsector + fcs;
+                            console.log(rems(0, "WARNING", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT)
                             break; //exit loop
                         }
-                        /* //desactivated, accept this at this stage//
-                        if (num != (d[end - 3] >> 2)) {
-                            //file numbering the MSB index of the next sector has changed
-                            dirEntry.valid = false;
-                            console.log(" one_dir() =>File#" + idf + ": DOS2x/MyDOS " + dirEntry.name + " has wrong file_number in sector " + sector +"!");
-                            break;
-                        }*/
-                        dirEntry.sectors[sector] = { sector: sector, slen: len, fbloc: k, snext: next, fid: num, slen: len}; //save the sector (offset = sector number)
-                        
-                        if (next == 0) { // check real end of file
-                            if (k != dirEntry.total - 1) { // EndOfFile reached before the end of total sector get from the file VTOC directory
-                                dirEntry.valid = 1;
-                                dirEntry.erf += " >no FMS next sector at sect." + sector + " & total to read not reached >file corrupted!";
-                                console.log(" one_dir() =>Error! File#" + idf + ": DOS2x " + dirEntry.name + " is truncated: next sector after " + sector + " is zero!");
-                            }
-                            break;  //exit loop // EOF?
-                        }
-                        sector = next;
                     }
-                }
-                else { // else if (!dirEntry.total) //if size is zero block or zero sector //(PVB CONSOLE HINT)
-                    console.log(" one_dir() =>Info: File#" + idf + ": DOS2x/MyDOS " + dirEntry.name + " is zero byte length!");
+                    else { //DOS1 //use of FMS K bit => number of bytes in sector OR file sector count in len variable //(PVB TODO) count the file sector when Z is set
+                        if (len & 0x80) { //check Z : if set, it should be the last sector of DOS1 file
+                            if (next) { //error, this is not the last sector !
+                                dirEntry.valid = 1;
+                                dirEntry.erf += " >DOS1 Z bit set in FMS @" + nsector + fcs;
+                                console.log(rems(0, "ERROR", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT)
+                                break; //exit loop
+                            }
+                            //else, if no next, then it is a valid DOS1 file no matter if there are still sector to read according to nbr of sector volue in DOS entry
+                        }
+                        else { //if Z clear, this is the file sector count and we should no be at the last sector (next not zero)
+                            //(PVB TODO) count the file sector of DOS 1 and compare it to the nbr of sector of DOS entry ?
+                            len = this.sector_size - 3; //that is $7F bytes of data in a sector in DOS1 non-last sector
+                            if (!next) { //error there is no next sector
+                                dirEntry.valid = 1;
+                                dirEntry.erf += " >DOS1 Z bit cleared in FMS @" + nsector + fcs;
+                                console.log(rems(0, "ERROR", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT)
+                                break; //exit loop
+                            }
+                        }
+                        len &= 0x7F; //any way clear the bit 8 to get the len (=number of bytes in sector)
+                    }
+                    if (next > this.sector_count) { //next sector check
+                        //next is above last sector of disk
+                        dirEntry.valid = 1;
+                        dirEntry.erf += " >bad $" + hdx(next) + " next sector in FMS @" + nsector + fcs;
+                        console.log(rems(0, "ERROR", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT)
+                        break; //exit loop
+                    }
+
+                    dirEntry.sectors[nsector] = { sector: nsector, slen: len, fbloc: (scnt-1), snext: next, fid: num, slen: len}; //save the sector (offset = sector number)
+                        
+                    if (next == 0) { // check real end of file (here len is OK and file Id is OK)
+                        var wbns = " =>wrong block number in file dir entry!";
+                        if (scnt < nbrsect) { //End-Of-File reached before the file total number of sector to read
+                            //trust the end of file in FMS and not from dirEntry.total, so keep dirEntry.valid = 2
+                            dirEntry.erf += " >End-Of-File @" + nsector + ", " + scnt + "/" + strSect(nbrsect) + " read" + wbns;
+                        }
+                        else if (scnt > nbrsect) { //End-Of-File reached beyong the file total number of sector to read
+                            //it is often the the cas with 0-sector length non-closed file, we may trust the end of file, but file should be invalid...
+                            dirEntry.erf += " >file has " + scnt + " valid sector" + (scnt == 1 ? "" : "s");
+                            if (dirEntry.flags == 0x43) dirEntry.erf += " =>data available";
+                            else dirEntry.erf += wbns;
+                        }
+                        else if (dirEntry.flags == 0x80) dirEntry.erf += " =>file still available"; //scnt == nbrsect AND deleted file => no error
+
+                        if (scnt != nbrsect) console.log(rems(0, "WARNING", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT) display the error if wrong number of sector read
+
+                        console.log("  ...OK! File#" + idf + " >" + doss + " '" + dirEntry.name + "' >EOF reached, " + strSect(scnt) + " read!");
+
+                        break;  //EOF exit loop with valid file
+                    }
+                    nsector = next;
+                    scnt ++;
                 }
             }
             else if (tdos == 3) {
@@ -6903,16 +6951,16 @@
                     var fNbrSect = 1; //number of sector for the file, starting at 1
                     var derr = "";
                     nextbloc = dosVtocArray[dirEntry.startbloc]; //init//number of current block, initialised to the start one
-                    sector = dirEntry.start; //init//current sector is the first one
+                    nsector = dirEntry.start; //init//current sector is the first one
                     for (var k = 0; k < dirEntry.total; k++) { //up to the total number of AU blocks in the DOS3 file
-                        if (sector == 0 || sector > this.sector_count) { //error sector is above total sector of disk
+                        if (nsector == 0 || nsector > this.sector_count) { //error sector is above total sector of disk
                             derr = " >invalid next block sector at file block #" + k + " >file corrupted!";
                         }
                         else if (nextbloc >= 0xFD && (k != dirEntry.total - 1)) { // error! EOF byte, but remaining block !
                             derr = " >EOF byte at file block #" + k + " with remaining block to read >file corrupted!";
                         }
                         else if ((k == dirEntry.total - 1) && nextbloc < 0xFD) { // error! no remaining block and no EOF byte !
-                            derr = " >No remaining block to read and EOF byte not reached >file corrupted! at file block #" + k;
+                            derr = " >no remaining block to read and EOF byte not reached >file corrupted! at file block #" + k;
                         }
                         if(derr) {
                             dirEntry.erf += derr;
@@ -6920,25 +6968,25 @@
                             console.log(" one_dir() =>File#" + idf + ": DOS3 " + dirEntry.name + " has" + derr);
                             break; //exit loop
                         }
-                        next = sector + 1;
+                        next = nsector + 1;
                         if (nextbloc == 0xFD) { //End-of-File, this is the last block
                             nextbloc = -1; //means EOF
                             nls = (dirEntry.bflen - 1) >> 7; //number of sector in the last block
                             len = dirEntry.bflen - nls * 128; //nbr of bytes in the last sector
                         } 
                         for (var s = 0; s <= nls; s++) { //do all the sectors of the DOS3 block
-                            dirEntry.sectors[sector + s] = {sector: sector + s, slen: this.sector_size, snext: next++, fbloc: k, cbloc: nextbloc}; //save the sector (offset is sector number)
+                            dirEntry.sectors[nsector + s] = {sector: nsector + s, slen: this.sector_size, snext: next++, fbloc: k, cbloc: nextbloc}; //save the sector (offset is sector number)
                             if (s == nls && nextbloc == -1) { //this is the last sector of the last block
-                                dirEntry.sectors[sector + nls].snext = 0; //so no next sector
-                                dirEntry.sectors[sector + nls].slen = len;
+                                dirEntry.sectors[nsector + nls].snext = 0; //so no next sector
+                                dirEntry.sectors[nsector + nls].slen = len;
                             }
                             fNbrSect ++;
                         }
                         if (nextbloc > 0) { //we are not at EOF
                             next = nextbloc * 8 + 25; //compute sector of the next block, use 'next' temporarily
                             nextbloc = dosVtocArray[nextbloc]; //and read next block
-                            dirEntry.sectors[sector + 7].snext = next; //adjust "snext" of previous block
-                            sector = next;
+                            dirEntry.sectors[nsector + 7].snext = next; //adjust "snext" of previous block
+                            nsector = next;
                         }
                     }
                     dirEntry.totalSect = fNbrSect;
@@ -6955,17 +7003,17 @@
                     var fNbrSize = 0; //size of the file // to compute
                     var derr = "";
                     nextbloc = dosVtocArray[dirEntry.startbloc]; //get the file vtoc byte in the VTOC, either it is a next "AU + 8" , either and EOF (if < 8)
-                    sector = dirEntry.start; //set initial first sector which corresponds to the first AU of the file
+                    nsector = dirEntry.start; //set initial first sector which corresponds to the first AU of the file
                     len = this.sector_size;
                     for (var k = 0; k < dirEntry.total; k++) { //up to the total number of AU blocks in the DOS4 file
-                        if (sector <= 0 || sector > this.sector_count) { //error sector is above total sector of disk
+                        if (nsector <= 0 || nsector > this.sector_count) { //error sector is above total sector of disk
                             derr = " >invalid next block sector at file block #" + k + " >file corrupted!";
                         }
                         else if (nextbloc <= 8 && (k != dirEntry.total - 1)) { // error! EOF byte, but remaining block !
                             derr = " >EOF byte at file block #" + k + " with remaining block to read >file corrupted!";
                         }
                         else if ((k == dirEntry.total - 1) && nextbloc > 8) { // error! no remaining block and no EOF byte !
-                            derr = " >No remaining block to read and EOF byte not reached >file corrupted! at file block #" + k;
+                            derr = " >no remaining block to read and EOF byte not reached >file corrupted! at file block #" + k;
                         }
                         if(derr) {
                             dirEntry.erf += derr;
@@ -6973,16 +7021,16 @@
                             console.log(" one_dir() =>File#" + idf + ": DOS4 " + dirEntry.name + " has" + derr);
                             break; //exit loop
                         }
-                        next = sector + 1;
+                        next = nsector + 1;
                         if (nextbloc < 8) { //End-of-File, this is the last AU block, nextbloc is the number of remaining sectors
                             nls = nextbloc; //nls = "nextbloc" sectors within the last AU block
                             nextbloc = -1; //means EOF
                         }
                         for (var s = 0; s <= nls; s++) { //do all the sectors of the DOS4 AU block
-                            dirEntry.sectors[sector + s] = {sector: sector + s, slen: this.sector_size, snext: next++, fbloc: k, cbloc: nextbloc}; //save the sector (offset is sector number)
+                            dirEntry.sectors[nsector + s] = {sector: nsector + s, slen: this.sector_size, snext: next++, fbloc: k, cbloc: nextbloc}; //save the sector (offset is sector number)
                             if (s == nls && nextbloc == -1) { //this is the last sector of the last block
-                                dirEntry.sectors[sector + nls].snext = 0; //so no next sector
-                                dirEntry.sectors[sector + nls].slen = dirEntry.bflen + 1;
+                                dirEntry.sectors[nsector + nls].snext = 0; //so no next sector
+                                dirEntry.sectors[nsector + nls].slen = dirEntry.bflen + 1;
                                 len = dirEntry.bflen + 1;
                             }
                             fNbrSect ++;
@@ -6992,8 +7040,8 @@
                             //compute sector of the next AU, use 'next' temporarily
                             next = this.alloc_unit_sector(nextbloc - 8); //then get the start sector of the next AU //if (next == -1) then error
                             nextbloc = dosVtocArray[nextbloc]; //and read next block
-                            dirEntry.sectors[sector + this.blockSect - 1].snext = next; //adjust "snext" sector of last sector of previous block
-                            sector = next;
+                            dirEntry.sectors[nsector + this.blockSect - 1].snext = next; //adjust "snext" sector of last sector of previous block
+                            nsector = next;
                         }
                     }
                     dirEntry.fsize = fNbrSize;
@@ -7003,7 +7051,7 @@
             if (dirEntry.valid != 2)
                 dirEntry.sectors = []; //if file entry not valid, no sector is save in the dirEntry
             else
-                console.log(" one_dir() =>OK: File#" + idf + ": " + (tdos == 3 ? "DOS3 '" : (tdos == 4 ? "DOS4 '" : "DOS2x/myDOS '")) + dirEntry.name + "' file is valid !!");
+                console.log("  >OK! File#" + idf + " >" + doss + " '" + dirEntry.name + "' is valid !!");
             return dirEntry;
         }
 
@@ -7114,7 +7162,7 @@
                     s.fsectors = [];
                     var n = s; //first sector is copied into n, s is kept into the loop
                     do {
-                        s.fsectors[n.sect] = {sector: n.sect, slen: n.len, snext: n.next, fbloc: s.total };
+                        s.fsectors[n.sect] = {sector: n.sect, slen: n.len, fbloc: s.total, snext: n.next, fid: s.num};
                         s.bytes += n.len; //s.bytes = number of bytes in the file
                         s.total++; //s.total = number of sector
                         if (n.next == 0) //end of file, exit loop
@@ -8058,7 +8106,7 @@
             density = "SpartaDOS disk format";
         }
         else if (atr.dosType == 10) { //for KBOOT ATR disk
-            density = "KBOOT disk on a small disk image";
+            density = "KBOOT disk with file loader on a reduced disk image";
         }
         else { //(PVB MOD) unknow format
             density = "Unknown disk format with " + ts + " Sectors of " + atr.sector_size + " bytes";
@@ -8075,7 +8123,7 @@
         txt.push(`; <b>Image has ${ts} ($${hdx(ts)}) sectors of ${atr.sector_size} bytes - ` + density + "</b>"); //(PVB MOD)
         //(PVB ADD) SpartaDOS dosType management
         //if (formatStrError) txt.push(formatStrError); //WIP//
-        var t1 = "disk has been identified";
+        var t1 = "</b> disk has been identified";
         var t2 = "1 block is 1 sector";
         if (sparta) { //Sparta
             if (atr.vtoc1_sect) txt.push("; Jump to SpartaDOS <a id='BOOT' href='#VTOC'>Disk Bitmap</a> (VTOC)");
@@ -8084,23 +8132,24 @@
             txt.push("; <b><u>The disk image file did not have a disk size and then has been restructured into a new full disk image file!</u></b>");
         }
         else if (atr.dosType == 10) { //KBOOT
-            txt.push(`; <b>KBoot ${t1}</b>, with one Atari executable file arbitrarily named 'KBOOFILE.XEX'`);
+            txt.push(`; <b>KBoot${t1}, with one Atari executable file arbitrarily named 'KBOOFILE.XEX'`);
             txt.push(`;  which size is $${hdx(atr.totalBlock)} (${atr.totalBlock}) bytes, and starting at sector ${atr.file_start}`);
         }
         else if (atr.dosType > 0) { //not for Sparta for which dosType == 0
             var mep = "";
+            var cb = "'</b>";
             switch (atr.dosType) {
                 case 1: 
                 case 2:
                     mep = ".0";
                 case 2.5:
-                    txt.push(`; DOS ${(atr.dosType + mep)} ${t1}, ${t2}`); break;
-                case 3: txt.push(`; DOS 3 ${t1}, 1 block is 8 sectors`); break;
-                case 4: txt.push(`; DOS 4 ${t1}, 1 allocation unit block is ${atr.blockSect} sectors`); break;
-                case 5: txt.push(`; DOS XE ${t1}, 1 allocation unit block is a cluster of ${atr.blockSect} sectors (type is '${atr.dosXEType}')`); break;
-                case 6: txt.push(`; MyDOS ${t1} (DOS2 compatible), ${t2}`); break;
-                case 7: txt.push(`; MyDOS ${t1} (not compatible with DOS2), ${t2}`); break;
-                case 8: txt.push(`; MyDOS4.5x HD ${t1} (more than 1440 sectors), ${t2}`); break;
+                    txt.push(`; <b>DOS ${(atr.dosType + mep)}${t1}, ${t2}`); break;
+                case 3: txt.push(`; <b>DOS 3${t1}, 1 block is 8 sectors`); break;
+                case 4: txt.push(`; <b>DOS 4${t1}, 1 allocation unit block is ${atr.blockSect} sectors`); break;
+                case 5: txt.push(`; <b>DOS XE${t1}, 1 allocation unit block is a cluster of ${atr.blockSect} sectors (type is '${atr.dosXEType}')`); break;
+                case 6: txt.push(`; <b>MyDOS${t1} (DOS2 compatible), ${t2}`); break;
+                case 7: txt.push(`; <b>MyDOS${t1} (not compatible with DOS2), ${t2}`); break;
+                case 8: txt.push(`; <b>MyDOS4.5x HD${t1} (more than 1440 sectors), ${t2}`); break;
             }
             if (atr.dirErrorStr) txt.push(`; WARNING${atr.dirErrorStr}`);
             if (atr.freeBlock || atr.totalBlock) {
@@ -8205,7 +8254,7 @@
                         });
                     for (var s = 0; s <  fe.sectors.length; s++) {
                         var sec = fe.sectors[s];
-                        blocsectors[sec] = {dirName: fe.name, dirTotal: fe.totalS, dirOffset: s + 1};
+                        blocsectors[sec] = {dirName: fe.name, dirTotal: fe.totalS, dirOffset: s};
                         if (s == fe.sectors.length - 1) {
                             blocsectors[sec].dirNext = 0;
                             if (fe.bflen) // case for file
@@ -8222,6 +8271,7 @@
                         if (sect.snext && sect.snext > 0) blocsectors[sect.sector].dirNext = sect.snext;
                         if (sect.slen) blocsectors[sect.sector].dirLen = sect.slen; //number of bytes in one sector
                         if (sect.fid >= 0) blocsectors[sect.sector].dirId = sect.fid; //id of file (not for DOS3 & 4)
+                        if (isdir) blocsectors[sect.sector].isdir = true;
                     });
                 }
                 if (sparta && fe.valid > 1) { //(PVB ADD) SpartaDOS file info
@@ -8251,7 +8301,7 @@
                 //Check the cases which identify an empty file, whatever DOS type (0 bytes directory is OK)
                 if (fe.valid != 1 && (!fe.fsize || !fe.sectors.length) && !isdir) strList += " =>empty entry"; 
                 //if file number is "=>" then it is an hidden/ canceled file that may be recovered
-                strList += (fe.numidf == '=>') ? (" =>may be recovered ?\n" ) : "\n";
+                strList += (fe.numidf == '=>') ? (" =>data may be recovered ?\n" ) : "\n";
                 if (isdir) strList += "</b>";
             });
             txt.push(strList + ";");
@@ -8318,7 +8368,7 @@
                 var nsf = bsn.dirNext;
                 var lsf = bsn.dirLen;
                 //(PVB MOD) if sb == 0; this is the file sector_map of a spartaDOS file
-                sstr += " [" + bsn.dirName + ";"; //file name
+                sstr += " ['" + bsn.dirName + "';"; //file name
                 if (bsn.dirId) sstr += " ID#" + bsn.dirId + ";";
                 if (bsn.map) sstr += " File Map"; //for SpartaDOS and DOS XE only, as they use file map sectors
                 sstr += (isDos34 ? " Block#" : " Sector#"); //only DOS 3 uses the block to display files, oddly DOS 4 uses sector display and not block display
@@ -8326,7 +8376,7 @@
                 if (sbf) sstr += " " + sbf + "/" + bsn.dirTotal + (isDos34 ? "" : " ($" + hdx(sbf) + "/$" + hdx(bsn.dirTotal) +")");
                 if (lsf && !isDos34 && !atr.isDosXE) sstr += "; Bytes: $" + hex(lsf,2) + "(" + lsf + ")";
                 if (nsf) sstr += "; NextSector: $" + hdx(nsf) + "(" + nsf + ")";
-                else if (!bsn.map) sstr += "; **EOF**" + (isDos34 || atr.isDosXE ? (" (EndByte@$" + hex(lsf-1,2) + ")") : "");
+                else if (!bsn.map && !bsn.isdir) sstr += "; **EOF**" + (isDos34 || atr.isDosXE ? (" (EndByte@$" + hex(lsf-1,2) + ")") : "");
                 else if (bsn.map) sstr += "; **EndOfMap**"
                 sstr += "]";
             }
@@ -8687,7 +8737,7 @@
     function load_one(name, ext, a, imgTag, gt, curext) { //(PVB COM) load_one() is called by load_data() when the disk image file is not a disk with several DOS files
         //(PVB ADD) handling the ROM case with the ROM constructor; "curext" if the file was already displayed with another extension; "gt" is the file type
         var nr;
-        console.log("load_one() loads " + name + " that is a '" + gt + "' file type into the container (previous 'ext' was '" + curext + "')"); //(PVB HINT)
+        console.log("load_one() => loads " + name + " that is a '" + gt + "' file type into the container (previous 'ext' was '" + curext + "')"); //(PVB HINT)
         if (gt == "isRomdump") {
             nr = new ROM(a, name);
         }
@@ -8740,7 +8790,8 @@
     function load_data(name, a, imgTag, curext) { //(PVB COM) load_data() is called by load() and flush_images() to load the OS/Windows Image file into memory
         //(PVB COM) name = full filaname of the disk image file like "Foo.XFD"; a =  data of the OS/Windows file;
         // imgTag = the image type/mime when the Client loads an image without or with unknown file extension; "curext" current ext of existing file in tool (conversion)
-        console.log(_hr + "\n>load_data() Loading '" + name + "' with imgTag '" + imgTag + "'..."); //(PVB HINT)
+        console.log(_hr);
+        console.log(">load_data() Loading '" + name + "' with imgTag '" + imgTag + "'..."); //(PVB HINT)
         var originalExt = "";
         var ext = "";
         if (curext && curext == "forceATR") {
@@ -9107,7 +9158,7 @@
             var isSparta = f.dosType == 0;
             var isStdDos = !isDos34XE && !isSparta;
             //(PVB MOD)
-            if (f.total) { //if the variable total exists and not equal to zero, display f.total in KB, B or in Secteurs size
+            if (f.total != undefined) { //if the variable total exists (even if equal to zero), display f.total in KB, B or in Secteurs size
                 sLine += f.total; //(PVB COM) we start the string line from the end where the size in KB or B is displayed
                 if (!isNaN(f.total)) { //padding of the DOS file size on 3 digit numbers with 0 at beginning...
                     if  (f.total <= 999) {
@@ -9416,11 +9467,12 @@
             set_tool("E", false);
         }
         //(PVB ADD) [button1] management for Atari Files, ATR, XFD, ROM or CART saving buttons
-        if (isRomdump) { //special buttons to save new CART header in a ".car" file...
-            if (f.rom.isCart || f.rom.restructured) //...if it is a CART 
+        if (isRomdump) { //special buttons to save new CART header in a ".CAR" file or a simple raw ROM file
+            if (f.rom.isCart || f.rom.restructured) //if it does not have 'rom' ext, and if it is a CART, or a restructured ROM, we can save it as raw ROM
                 button1 += ` <button type='button' title='=without CART header' onclick='save_wo_header()'>Download raw ROM</button>`;
-            button1 += ` <button type='button' title='=adding the CART header' onclick='save_as_cart()' ${((!f.rom.isCart && f.rom.romType) || (f.rom.isCart && f.rom.oldRomType)) ? '' : 'disabled'}>`;
-            button1 += `Download new CART</button>`;
+            //if we have set a ROM type, or change a ROM type on a CART, or it has the 'rom' extension then we can save it with CART header
+            if ((!f.rom.isCart && f.rom.romType) || (f.rom.isCart && f.rom.oldRomType) || (f.ext != 'car'))
+                button1 += ` <button type='button' title='=adding the CART header' onclick='save_as_cart()'>Download new CART</button>`;
         }
         else { //Atari file, ATR or XFD saving buttons
             var db = isDisk && f.atr && (f.atr.restructured || f.atr.buggy || f.atr.bModif || f.atr.forcedExt || f.atr.newDisk); //force both XFD and ATR buttons when ATR disk image has been modified
@@ -9428,19 +9480,17 @@
                 button1 += `<button type='button' title='=extract it if from disk image, or re-save original file' onclick='save(0)'>Download original Atari file</button>`; 
             //(PVB ADD) Add a Save Buttons for saving XFD/ATX/PRO/DSK into ATR, and ATR/ATX/PRO/DSK into XFD
             //(PVB COM) We know that we have in memory a disk file always converted in ATR
-            if (db || isDisk && f.ext !="atr") { 
-                //so we can save it into ATR if it was an XFD for instance
+            if (db || isDisk && f.ext !="atr") { //so we can save it into ATR if it was an XFD for instance
                 button1 += `<button type='button' title='=convert to ATR disk image (with ATR header)' onclick='save_as_dsk("ATR")'>Download ATR file</button>`; 
             }
-            if (db || isDisk && f.ext !="xfd") {
-                //so we can save it into XFD if we remove ATR 16-bytes header
+            if (db || isDisk && f.ext !="xfd") { //so we can save it into XFD if we remove ATR 16-bytes header
                 button1 += `<button type='button' title='=convert to XFD disk image (no ATR header)' onclick='save_as_dsk("XFD")'>Download XFD file</button>`; 
             }
         }
         //(PVB ADD) set the "imageinfo" text about the Ext Type and file Type
         var oext = f.prevext ? f.prevext : f.original_ext;
         if (isRomdump)
-            imageinfo += `<div><em>INFO: Dump image file <b>Ext type</b> was automatically set and can only change to 'DAT' type</em></div>`;
+            imageinfo += `<div><em>INFO: Dump image file <b>Ext type</b> was set by the Tool and can only be changed to DAT' type</em></div>`;
         else if (isDisk && !f.original_ext) {
             if (f.atr.orginalATR != "ATR" && f.atr.orginalATR != "XFD" && f.atr.orginalATR != "DSK" && !f.atr.restructured) {
                 imageinfo += `<div><em>INFO: The '${f.atr.orginalATR}' original disk image file has been converted into an ATR by the tool</em></div>`;
@@ -9861,14 +9911,13 @@
             refresh(); //will close the Hex Editor
         }
     }
-    //(PVB ADD) function segs_merging(a, s) to merge nearby segments and cancel inner $FFFF headers of an Atari Executable file
-    function segs_merging(a, s) { //a is the file uint8 data, and segs its extracted segments, got by get_xex_segs() in xex_dump() function
+    //(PVB ADD) function segs_merging(oa, os) to merge nearby segments and cancel inner $FFFF headers of an Atari Executable file
+    function segs_merging(oa, os) { //'oa' is the file uint8 data, and 'os' its extracted segments, got by get_xex_segs() in xex_dump() function
         var mod = 0;
         var gp;
         var re = [];
-        var sg = [];
-        a.forEach((b) => re.push(b)); //copy uint8 data in temp buffer
-        s.forEach((b) => sg.push(b));//var sg = s.toSpliced(0,0); //copy of segment list array
+        oa.forEach((b) => re.push(b)); //copy uint8 data in temp buffer
+        var sg = JSON.parse(JSON.stringify(os));; //deep copy of segment list array
         var i = sg.length - 1; //set last segment[i] of the file
         var opt = false; //nothing found yet
         while (i > 1) { // i == 1 when reaching the first segment that is the $FFFF header
@@ -9910,13 +9959,16 @@
                         re = re.concat(lp); // then add the last previpus saved part
                     }
                     else { //gap is zero byte, just cancel the segment (i) header of 4 bytes
-                        re.splice(sg[i].offset -4, 4); //cancel 2 bytes at sg[i].offset
+                        re.splice(sg[i].offset -4, 4); //cancel 4 bytes at sg[i].offset
                     }
-                    sg.splice(i, 1); //cancel the segment
+                    sg[i-1].end = sg[i].end; //replace old end by new end in the segment i-1
+                    sg[i-1].len += sg[i].len + gp; //update len of segment i-1
+                    sg.splice(i, 1); //cancel current segment entry merged into segment i-1
                     for (var j = i; j < sg.length; j++ ) {
-                        sg[j].offset = sg[j].offset - 4 + gp ; //shift all offsets from 4 bytes (header) added by the new gap bytes
+                        sg[j].offset -= 4;  //decrease all offsets from 4 bytes (header)
+                        sg[j].offset += gp; //add gp new bytes to all offsets
                     }
-                    console.log(" >segs_merging => has merge the two segments now from $" + hdx(sg[i-1].start) + " to $" + hdx(sg[i].end));
+                    console.log(" >segs_merging => has merged two segments, now $" + hdx(sg[i-1].start) + " to $" + hdx(sg[i-1].end) + ", len $" + hdx(sg[i-1].len));
                     mod = 1; //file is modified
                 }
             }
@@ -9932,7 +9984,7 @@
         }
         //returns new merged uint8 data file if modif/merging is OK; returns null if nothing to merge nor optimization found
         return (opt ? new Uint8Array(re) : null);
-    } 
+    }
     //(PVB end of ADD)
 </script>
 <head>
@@ -9978,7 +10030,7 @@
                 <i><b>Ctrl+H</b> toggles Hex View</i><br />
                 <i><b>Shift+Click</b> opens Keyboard in Editor</i><br />
             </p>
-            <div style="font-size: xx-small;color: #99C;text-align: center;">MAY 2025 VERSION<br />by PVBest</div>
+            <div style="font-size: xx-small;color: #99C;text-align: center;">JULY 2025 VERSION<br />by PVBest</div>
             <input type="file" id="fe" multiple style="display:none" aria-label="Drag files here">
         </nav>
         <main style="border:solid 1px #CCC">
