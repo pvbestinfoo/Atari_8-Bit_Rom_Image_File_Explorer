@@ -8,7 +8,7 @@ If a file is loaded in the tool with an extension a type is not listed, the Tool
 
 If it not succeed, then the default extension DAT is set to the file in order to display it as Hexdump.
 
-![image](https://github.com/user-attachments/assets/1d5d966d-1f70-4348-8c2f-4787387a9c55)
+![image](https://github.com/user-attachments/assets/fee7fbb6-b658-4999-90a1-3a33626cc617)
 
 ## DAT extension files
 
@@ -20,6 +20,14 @@ ATR, ATX, PRO, XFD, DSK are disk image file. Usually this is the kind of file yo
 
 * ATR contains the specific Nick 16-bytes header.
 * DSK is a raw copy of disk image sectors. Change its type to XFD to explore its content.
+
+## DCM file
+
+DCM file is a compressed disk image file.
+
+The Tool will decompress and show it as a disk image file, that can be saved into ATR or XFD file.
+
+![image](https://github.com/user-attachments/assets/396e7c89-4e14-4a3c-9917-3fd972261495)
 
 ## ARC file
 
@@ -143,7 +151,7 @@ The Tool calulates a start address at $8000:
 
 Let's figure that you have this BASIC file in the Tool:
 
-![image](https://github.com/user-attachments/assets/853cecb7-1a23-481c-9cba-8dbbd2edc52c)
+![image](https://github.com/user-attachments/assets/0c8d7da8-4f25-492b-a45a-f88ed4401547)
 
 **1/** You can use **Save as UTF text**, for you reference to get a text copy on your Client's system.
 Save and open it in a Client's text editor, the result is:
@@ -165,4 +173,4 @@ Save and open it in a Client's text editor, the result is:
 ![image](https://github.com/user-attachments/assets/f7fb7ca5-28b5-4516-9794-ad2dfe30dd59)
 
 
-_PVBest infoo Nov 2024_
+_PVBest infoo Nov 2024, updated July 2025_
