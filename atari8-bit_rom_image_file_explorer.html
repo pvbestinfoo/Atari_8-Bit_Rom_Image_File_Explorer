@@ -5356,15 +5356,19 @@
                 else if (ATX.is_atx(a)) te = 'atx';
                 else if (XFD.is_xfd(a)) te = 'xfd';
                 else { //none of them
-                    console.log(">get_ext() '" + name + "'' is not an ATR file, nor a PRO, nor ATX, nor XFD => show it as 'DAT'!");
+                    console.log(">get_ext() '" + name + "'' is not an ATR file, nor a PRO, nor ATX, nor XFD => show it as 'DAT' through 'ere'");
                     return 'ere';
                 }
                 return te;
             }
             if (ext == "dcm") { //check DCM Disk Image
                 if (a[0] == 0xF9 || a[0] == 0xFA) return 'dcm';
-                console.log(">get_ext() has not found the DCM signature for file " + name + ", so force it to 'DAT'");
+                console.log(">get_ext() has not found the DCM signature for file " + name + ", so force it to 'DAT' through 'ere'");
                 return 'ere';
+            }
+            if (ext == "set" && a.length == 0x400) { //'set' files with 1024 byte length are fonts, so returns 'fnt'
+                console.log(">get_ext() has found a $400 bytes 'set' font file, so force it to 'FNT'");
+                return 'fnt';
             }
             if (_exts[ext]) { //(PVB COM) returns the extension if found in the table of extensions
                 console.log(" get_ext() has found extension '" + ext + "' for file " + name + " in the _exts table");
@@ -5769,7 +5773,7 @@
             lines.push("; <b>File '" + name + "' is $" + hdx(len) + " (" + len + ") bytes</b>");
             if (mergedfile) {
                 _shown.mergedfile = mergedfile;
-                lines.push("; Click if you want to merge nearby segments and make a new file ==> <em class='showcode' onclick='open_mergedfile()'>Merge segments into a new file</em>");
+                lines.push("; Click to fix & merge nearby segments, and to make a new file ==> <em class='showcode' onclick='open_mergedfile()'>Merge segments into a new file</em>");
             }
             if (_shown.start && (dump_type == 'HEAD' || dump_type == 'BIN' || !dump_type)) {
                 lines.push("; [Start sector: " + _shown.start + " ($" + hex(_shown.start, 3) + "); " + _shown.total + " ($" + hex(_shown.total, 3) + ") blocks]");
@@ -6819,11 +6823,14 @@
                     len = d[clbp]; //the last byte of the sector if the number of data bytes in the sector
                     next = ((d[clbp - 2] & 0x3) << 8) | d[clbp - 1];
                     num = d[clbp - 2] >> 2;
-                    if (len + next + num == 0) { //FMS bytes are null =>empty sector ? file is corrupted
+                    if (len + next + num == 0) { //FMS bytes are null => sector contains $00 bytes ? => so file is corrupted
                         dirEntry.valid = 1;
-                        dirEntry.erf += " >FMS bytes null @ start sector " + nsector;
-                        if (scnt == 1) dirEntry.erf += " =>no file!";
-                        else dirEntry.erf += " (" + strSect(scnt-1) + " read)" + fcs;
+                        dirEntry.erf += ` >FMS bytes null @${nsector}`;
+                        if (scnt == 1) dirEntry.erf += " start sector =>no file!";
+                        else dirEntry.erf += ", " + strSect(scnt-1) + " read" + fcs;
+                        //dirEntry.erf += " >FMS bytes null @" + (scnt == 1 ? " start sector " : "") + nsector;
+                        //if (scnt == 1) dirEntry.erf += " =>no file!";
+                        //else dirEntry.erf += " (" + strSect(scnt-1) + " read)" + fcs;
                         console.log(rems(0, "ERROR", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT)
                         break;
                     }
@@ -6946,7 +6953,7 @@
                     console.log(" one_dir() =>File#" + idf + ": DOS3 " + dirEntry.name + " is not a valid file as zero byte length!");
                 }
                 else {
-                    console.log(" one_dir() =>File#" + idf + ": DOS3 '" + dirEntry.name + "' reading sectors...");
+                    console.log(" one_dir() =>File#" + idf + ": DOS3 '" + dirEntry.name + "' reading file block sectors...");
                     var nls = 7; //from 0 to 7, 8 sectors in a block
                     var fNbrSect = 1; //number of sector for the file, starting at 1
                     var derr = "";
@@ -6954,13 +6961,13 @@
                     nsector = dirEntry.start; //init//current sector is the first one
                     for (var k = 0; k < dirEntry.total; k++) { //up to the total number of AU blocks in the DOS3 file
                         if (nsector == 0 || nsector > this.sector_count) { //error sector is above total sector of disk
-                            derr = " >invalid next block sector at file block #" + k + " >file corrupted!";
+                            derr = " >invalid next block sector " + nsector + " @fileblock #" + k + " >file corrupted!";
                         }
                         else if (nextbloc >= 0xFD && (k != dirEntry.total - 1)) { // error! EOF byte, but remaining block !
-                            derr = " >EOF byte at file block #" + k + " with remaining block to read >file corrupted!";
+                            derr = " >EOF byte @fileblock #" + k + " (but " + (dirEntry.total-k) + " remaining blocks to read) >file corrupted!";
                         }
                         else if ((k == dirEntry.total - 1) && nextbloc < 0xFD) { // error! no remaining block and no EOF byte !
-                            derr = " >no remaining block to read and EOF byte not reached >file corrupted! at file block #" + k;
+                            derr = " >EOF byte not reached @fileblock #" + k + " (but no remaining block to read) >file corrupted!";
                         }
                         if(derr) {
                             dirEntry.erf += derr;
@@ -7139,8 +7146,9 @@
             for (var i = 4; i <= this.sector_count ; i++) { //map the sector of the disk
                 var end = this.sector_offset(i) + this.sector_size;
                 var len = d[end - 1];
-                var next = ((d[end - 3] & 0x03) << 8) | (d[end - 2]);   // TODO: 10 bits
-                if (len == (this.sector_size - 3) || ((len <= (this.sector_size - 3)) && next == 0))
+                var next = ((d[end - 3] & 0x03) << 8) | (d[end - 2]);
+                var zero = is_zero(d, this.sector_offset(i), this.sector_size);
+                if (!zero && (len == (this.sector_size - 3) || ((len <= (this.sector_size - 3)) && next == 0))) //len is valid
                     sSectors[i] = { sect: i, len: len, next: next, num: d[end - 3] >> 2 };
                 else //means file broken by wrong sector, like an empty BAD sector, filed with zero or inconsistant data
                     sSectors[i] = { sect: i, len: 0, next: 0, num: -1 };
@@ -7150,7 +7158,7 @@
                 if (n) {
                     if (n.num == s.num)
                         n.prev = s.sect;
-                    else s.next = 0;
+                    //else s.next = 0;
                 }                    
             });
             sSectors.forEach(s => {
@@ -7172,8 +7180,8 @@
                             //if next sector is empty, or sector link damaged, or wrong id : need to close current file and set a new one
                             if (!ns || (ns.prev != n.sect) || (s.num != n.num)) { 
                                 s.error++; //the retrieved file has an error
-                                s.fsectors[n.sect].snext = 0; //so cancel the next sector
-                                sSectors[n.sect].next = 0;
+                                s.fsectors[n.sect].snext = -1; //so mark next sector as a forced end (-1)
+                                sSectors[n.sect].next = 0; //and cancel the next sector
                                 if (ns && (s.num != n.num)) //reajust "previous" to zero in the next sector only for 'num' mismatching
                                     sSectors[ns.sect].prev = 0;
                                 break;
@@ -7219,7 +7227,7 @@
                             i--; //cancel the .DAT name number
                         }
                     }
-                    var tdir = { numidf: "=>", sectors: f.fsectors, valid: 2, start: f.sect, total: f.total, fsize: f.bytes, name: name, name83: name83, ext: ext3, flags: 0x00, recovered: true, fnum: f.num };
+                    var tdir = { numidf: f.num, sectors: f.fsectors, valid: 2, start: f.sect, total: f.total, fsize: f.bytes, name: name, name83: name83, ext: ext3, flags: 0x00, isRecovered: true };
                     dirs.push(tdir);
                     console.log("scan_files() =>Info: file '" + name + "'' recovered, file id #" + f.num + ", start at " + f.sect + ", length is " + f.bytes + " bytes, " + f.total + " sectors" );
                 }
@@ -7514,7 +7522,9 @@
         var BArcType;
         var BPassInfo;
         var sectorNbr;
+        var isDMCok = false;
         function readSource(n, ofst) {
+            //if (n + ofst > srcDCM.length) return -1; //unexpected EOF
             while (n > 0) {
                 sectorBuffer[ofst++] = srcDCM[idx++];
                 n--;
@@ -7528,15 +7538,20 @@
                 sectorBuffer[j--] = t;
             }
         }
-        while (true) {
+        while (idx < srcDCM.length) {
+
             BArcType = srcDCM[idx++];
-            if (BArcType != 0xF9 && BArcType != 0xFA) return false;
+            if (BArcType != 0xF9 && BArcType != 0xFA) {
+                console.log(">>> extract_dcm() !ERROR: Wrong DCM file signature!!");
+                return false; //wrong DCM signature
+            }
 		    BPassInfo = srcDCM[idx++];
             //BPassInfo= Pass number: A sequence number assigned to each pass.  Normally ranging from 1 to 31 decimal.
             //This might roll over to zero after 31. End of pass: The value hex 45.
             console.log(">>> extract_dcm() >>Entering pass number #" + (BPassInfo & 0x1F) + "...");
 		    let BSctrLow = srcDCM[idx++];
 		    let BSctrHigh = srcDCM[idx++];
+
 		    let sSize = (BPassInfo & 0x60) == 0x20 ? 256 : 128;
 		    sectorNbr = BSctrHigh *256 + BSctrLow;
             switch(BPassInfo & 0x60) {
@@ -7554,10 +7569,9 @@
                 console.log(">>> extract_dcm() DCM to ATR disk of " + dSize + " bytes created with density " + DCMSectorSize);
                 bfirst = false;
             }
-            while (true) {
+            while (idx < srcDCM.length) {
                 let contentType = srcDCM[idx++];
-                if ((contentType & 0x7F) == 0x45)
-                    break;
+                if ((contentType & 0x7F) == 0x45) break;
                 // This check has to be after the 0x45 token check, as it's legal to have a sector number of 0 before it.
                 if (!sectorNbr) {
                     console.log(">>> extract_dcm() !ERROR: Null sector number encountered!!");
@@ -7565,8 +7579,9 @@
                 }
                 else
                     console.log(">>> extract_dcm() decodes sector $" + hdx(sectorNbr) + " with command $" + hdx(contentType) + "...");
+                
                 let c;
-                //Compression type: One of the following hex values: 41, 42, 43, 44, 46 or 47.
+                //Compression type: one of the following hex values: 41, 42, 43, 44, 46 or 47.
                 switch(contentType & 0x7F) {
                     case 0x41: //65 //modify begin
                         c = srcDCM[idx++];
@@ -7587,14 +7602,14 @@
                             // offset cannot exceed sectorSize, ever.
                             if (offset > DCMSectorSize) {
                                 console.log(">>> extract_dcm() !ERROR: Offset " + offset + " greater than sectorsize!!");
-                                return false;
+                                return false; //error
                             }
                             // offset cannot go backwards, except in two specific cases:
                             //  - offset is 0, pos is 0 (null span)
                             //  - offset is 0, sectorSize is 256 (fill to end of DD sector)
                             if (offset < pos && (offset || (pos && DCMSectorSize != 256))) {
                                 console.log(">>> extract_dcm() !ERROR: Backwards offset " + offset + " encountered!!");
-                                return false
+                                return false; //error
                             }
                             let spanLen = (offset || bfirst ? offset : DCMSectorSize) - pos;
                             if (bcompressed) {
@@ -7609,22 +7624,22 @@
                             bfirst = false;
                         }
                         break;
-                    case 0x44:		// 68 // modify end
+                    case 0x44:		// 68 //modify end
                         c = srcDCM[idx++];
                         if (c >= DCMsectorSize) {
                             console.log(">>> extract_dcm() !ERROR: at code 0x44, read byte " + c + " is greater than sectorsize!!");
-                            return false;
+                            return false; //error
                         }
                         readSource(DCMsectorSize - c, c);
                         break;
-                    case 0x46:		// 70 // repeat last sector
+                    case 0x46:		// 70 //repeat last sector
                         break;
                     case 0x47:		// 71 //uncompressed sector
                         readSource(DCMSectorSize, 0);
                         break;
                     default:
                         console.log(">>> extract_dcm() !ERROR: byte $" + hdx(contentType) + " is not a supported DCM command!!");
-                        return false;
+                        return false; //error
                     }
                 //create entry for sector
                 //storeBuffer(sctr_nbr) in the disk image
@@ -7635,7 +7650,7 @@
                 }
                 // increment sector number if sequential flag is set, else read new sector number
                 if (contentType & 0x80) {
-                    ++sectorNbr
+                    ++sectorNbr;
                 }
                 else {
                     BSctrLow= srcDCM[idx++];
@@ -7644,7 +7659,14 @@
                 }
             }
             //exit main loop
-            if (BPassInfo & 0x80) break; //exit main loop
+            if (BPassInfo & 0x80) {
+                isDMCok = true;
+                break; //exit main loop
+            }
+        }
+        if (!isDMCok) {
+            console.log(">>> extract_dcm() !ERROR: unexpected End-Of-File, DCM file corrupted!!");
+            return false; //unexpected EOF
         }
         console.log(">>> extract_dcm() >>Process over, exiting!");
         return DCMtoATRdisk;
@@ -8244,7 +8266,8 @@
             //(PVB MOD) add the directory listing //previously// dirs.forEach(dir => dir.sectors.forEach(s => { sectors[s.sector] = { dir: dir, sector: s } }));
             dirs.forEach(fe => { //for each file entry from the dos directory
                 var dt = "";
-                var isdir = fe.is_dir ? true : false;
+                var isDir = fe.is_dir ? true : false; //DOS directory
+                var isRcvd = fe.isRecovered ? true : false; //DOS2x recovered file or data file
                 //Tag every sector with the file's name and block numbers
                 if (atr.isDosXE) { //for DOS XE only
                     if (fe.maps)
@@ -8271,7 +8294,9 @@
                         if (sect.snext && sect.snext > 0) blocsectors[sect.sector].dirNext = sect.snext;
                         if (sect.slen) blocsectors[sect.sector].dirLen = sect.slen; //number of bytes in one sector
                         if (sect.fid >= 0) blocsectors[sect.sector].dirId = sect.fid; //id of file (not for DOS3 & 4)
-                        if (isdir) blocsectors[sect.sector].isdir = true;
+                        if (isDir) blocsectors[sect.sector].isDir = true; //file is a directory
+                        if (isRcvd) blocsectors[sect.sector].isRcvd = true; //DOS2x retreived file
+                        if (isRcvd && sect.snext < 0) blocsectors[sect.sector].isEnd = true; //forced end of DOS2x retreived file
                     });
                 }
                 if (sparta && fe.valid > 1) { //(PVB ADD) SpartaDOS file info
@@ -8285,24 +8310,29 @@
                     dt = " [Id $" + hdx(fe.dfnbr) + "]";
                     if (fe.numidf) dt += "[Creation date:" + fe.cdate + "; Mod date:" + fe.mdate + "]";
                 }
-                //Display directories listing 
-                if (isdir) strList += "<b>"; //Directory diplayed in bold
-                strList += ";" + (fe.numidf == '=>' ? pad_dir(("(#"+ fe.fnum + ")"),6) : pad_dir((" #"+ fe.numidf),8)); //FileId
-                strList += (fe.numidf == '=>' ? "=> --  " : ("$" + pad_dir(hex(fe.flags,2),4))) + pad_dir(fe.name, 13); //the recovered ones
+                //Display directories listing
+                if (isDir) strList += "<b>"; //Directory diplayed in bold
+                if (fe.isRecovered ) strList += "<i>"; //DOS2x recovered file or data are displayed in italic
+                //strList += ";" + (fe.numidf == '=>' ? pad_dir(("(#"+ fe.fnum + ")"),6) : pad_dir((" #"+ fe.numidf),8)); //FileId
+                //strList += (fe.numidf == '=>' ? "=> --  " : ("$" + pad_dir(hex(fe.flags,2),4))) + pad_dir(fe.name, 13); //the recovered ones
+                strList += ";" + (fe.isRecovered ? pad_dir(("(#"+ fe.numidf + ")"),6) : pad_dir((" #"+ fe.numidf),8)); //FileId
+                strList += (fe.isRecovered ? "=> --  " : ("$" + pad_dir(hex(fe.flags,2),4))) + pad_dir(fe.name, 13); //the recovered ones
                 strList += (" $"+ hex(fe.start,3) + pad_dir((" (" + fe.start + ")"), 7)); //start sector
                 strList += (" $"+ hex(fe.total,3) + pad_dir((" (" + fe.total + ")"), 7)); //total blocks
                 strList += (" $"+ hex(fe.fsize,5) + pad_dir((" (" + fe.fsize + ")"), 9)); //file size
                 if (fe.erf) strList += fe.erf; else strList += dt;
                 if ((atr.isDosXE || sparta) && fe.numidf == 0) strList += "[ROOT MAIN DIRECTORY]"; //first entry for SpartaDOS or DOS XE is MAIN
                 else { //if not Sparta nor DOS XE first entry"
-                    if (isdir) strList += "[DIR]";  // show "DIR" text if isdir
+                    if (isDir) strList += "[DIR]";  // show "DIR" text if isDir
                     if (fe.dir_name) strList += "[Parent is " + fe.dir_name + "]"; //show parent "dir_name" if not empty
                 }
                 //Check the cases which identify an empty file, whatever DOS type (0 bytes directory is OK)
-                if (fe.valid != 1 && (!fe.fsize || !fe.sectors.length) && !isdir) strList += " =>empty entry"; 
+                if (fe.valid != 1 && (!fe.fsize || !fe.sectors.length) && !isDir) strList += " =>empty entry"; 
                 //if file number is "=>" then it is an hidden/ canceled file that may be recovered
-                strList += (fe.numidf == '=>') ? (" =>data may be recovered ?\n" ) : "\n";
-                if (isdir) strList += "</b>";
+                //strList += (fe.numidf == '=>') ? (" =>data may be recovered ?\n" ) : "\n";
+                strList += fe.isRecovered ? " =>data may be recovered ?\n" : "\n";
+                if (isDir) strList += "</b>";
+                if (fe.isRecovered ) strList += "</i>";
             });
             txt.push(strList + ";");
         }
@@ -8360,7 +8390,7 @@
                 case atr.vtoc2_sect:
                     txt.push("; <span id='VTOC2'>VTOC2 Volume Table of Contents 2<a href='#BOOT'>(back)</a></span>"); break;
             }
-            var bsn = blocsectors[n]; // .sectors correspond au chainage des secteurs d'un fichier DOS valide
+            var bsn = blocsectors[n];
             var sstr = "";
             var cstr = "";
             if (bsn) { //the sector belongs to a file (or file sector map for Sparta) So display the fiename and the file sector count
@@ -8368,17 +8398,24 @@
                 var nsf = bsn.dirNext;
                 var lsf = bsn.dirLen;
                 //(PVB MOD) if sb == 0; this is the file sector_map of a spartaDOS file
+                if (bsn.isRcvd) sstr += "<i>" //retreived file are in italic
                 sstr += " ['" + bsn.dirName + "';"; //file name
-                if (bsn.dirId) sstr += " ID#" + bsn.dirId + ";";
+                //if (bsn.dirId) sstr += " ID#" + bsn.dirId + ";";
+                if (bsn.dirId) sstr += ` ${bsn.isRcvd ? "(" : ""}ID#${bsn.dirId}${bsn.isRcvd ? ")" : ""};`;
                 if (bsn.map) sstr += " File Map"; //for SpartaDOS and DOS XE only, as they use file map sectors
                 sstr += (isDos34 ? " Block#" : " Sector#"); //only DOS 3 uses the block to display files, oddly DOS 4 uses sector display and not block display
-                //sstr += " Sector#";
                 if (sbf) sstr += " " + sbf + "/" + bsn.dirTotal + (isDos34 ? "" : " ($" + hdx(sbf) + "/$" + hdx(bsn.dirTotal) +")");
                 if (lsf && !isDos34 && !atr.isDosXE) sstr += "; Bytes: $" + hex(lsf,2) + "(" + lsf + ")";
-                if (nsf) sstr += "; NextSector: $" + hdx(nsf) + "(" + nsf + ")";
-                else if (!bsn.map && !bsn.isdir) sstr += "; **EOF**" + (isDos34 || atr.isDosXE ? (" (EndByte@$" + hex(lsf-1,2) + ")") : "");
-                else if (bsn.map) sstr += "; **EndOfMap**"
+                if (nsf) //there is a next sector
+                    sstr += "; NextSector: $" + hdx(nsf) + "(" + nsf + ")";
+                else if (bsn.isEnd) //no next but retreived file forced end
+                    sstr += "; **Forced EOF**";
+                else if (!bsn.map && !bsn.isDir) //no next sector, it's a DOS2x end of file
+                    sstr += "; **EOF**" + (isDos34 || atr.isDosXE ? (" (EndByte@$" + hex(lsf-1,2) + ")") : "");
+                else if (bsn.map) //no next sector, it's an end of sector map
+                    sstr += "; **EndOfMap**"
                 sstr += "]";
+                if (bsn.isRcvd) sstr += "</i>"
             }
             //(PVB MOD) display disk sectors with counting from 1 and not 0, and corresponding Block (Allocation Unit) for DOS 3 and 4
             if (atr.isDos4 || (atr.isDos3 && n >= 25)) { //Block $15(30)-Sect#5
@@ -8791,7 +8828,7 @@
         //(PVB COM) name = full filaname of the disk image file like "Foo.XFD"; a =  data of the OS/Windows file;
         // imgTag = the image type/mime when the Client loads an image without or with unknown file extension; "curext" current ext of existing file in tool (conversion)
         console.log(_hr);
-        console.log(">load_data() Loading '" + name + "' with imgTag '" + imgTag + "'..."); //(PVB HINT)
+        console.log("load_data() Loading '" + name + "' with imgTag '" + imgTag + "'..."); //(PVB HINT)
         var originalExt = "";
         var ext = "";
         if (curext && curext == "forceATR") {
@@ -8799,12 +8836,12 @@
             ext = "xfd";
         }
         else {
-            originalExt = name.lastIndexOf(".") == -1 ? "" : name.substring(name.lastIndexOf(".") + 1).toLowerCase(); //the requested ext before anlylising it by get_ext()
+            originalExt = name.lastIndexOf(".") == -1 ? "" : name.substring(name.lastIndexOf(".") + 1).toLowerCase(); //get the requested ext before anlylising it by get_ext()
             ext = get_ext(name, a, imgTag, false); //(PVB COM) get the filename extension according to its contents and/or its extension!; "false" for not atari DOSfile
         }
         //(PVB MOD) the new function get_type() to remplace "var e = _exts[ext];"
         //Note: for disk image, get_ext() checks and corrects extension adequacy by analyzing disk content, in order to avoid ATR constructor crash
-        //get_ext() returns "ere" if dcm error or atr error
+        //get_ext() returns "ere" if dcm error (no dcm signature) or if atr error
         if (curext && curext != "forceATR") { //it is an Ext Type conversion by the user, so put right extension
             name = name.substring(0, name.lastIndexOf(originalExt.toUpperCase()) - 1); //cancel the file ext that had been added
             if (ext == "ere" && (curext == '???' || curext == 'dat')) { //no need to reopen a dat file, because "ere" will be displayed as DAT
@@ -8822,7 +8859,7 @@
         }
         //Here: we have an isDisk disk image.
         console.log("load_data() converts and loads the '" + ext + "' disk image file into a displayable ATR file..."); //(PVB HINT)
-        //make an ATR with the isDisk (isDisk are always converted into ATR in the tool)
+        //make an ATR with the isDisk (isDisk are always converted into an ATR disk to be handled by the tool)
         var str = '';
         if (ext == 'dcm') { //if it is a dcm file, convert it!
             var b = extract_dcm(a);
@@ -8831,21 +8868,21 @@
         }
         else {
             var atr = new ATR(a, name, ext);
-            if (!atr) str = '! ERROR while trying to open the "' + name + '", it cannot be converted into ATR disk image!';
-            if (a.length == 0) a = atr.d.slice(16); //atr has been created, but length of "a" was null, so it was an empty file, copy the restructured "atr.d" in "a"
+            if (!atr) str = '! ERROR while trying to open the "' + name + '", it cannot be converted into ATR disk image!'; //should not occur
+            if (a.length == 0) a = atr.d.slice(16); //for 0 byte client's file => atr has been created, but length of "a" was null, so copy the restructured "atr.d" in "a"
+        }
+        if (!atr) { //this can be the case for wrong DCM file...
+            alert(str);
+            console.log("load_data() => ATR Constructor error: " + str + "; so open it as RAW DAT file");
+            return load_one(name, 'ere', a, false, 'isRaw', ext);
         }
         //(PVB MOD) improvement of the files array
-        if (!atr) {
-            alert(str);
-            console.log("load_data() => ATR Constructor error: " + str);
-            return null;
-        }
         var files = []; //"files" array is the list of files to be displayed in the blue directory on page left by render_state(m)
         if (!atr.restructured) { //(PVB ADD) if "restructured" no need to seek for a directory, no file on restructured ATR disk
             var dirs = atr.get_dir();
             dirs.forEach(f => { //purpose here is to get type of each Atari DOS file, and if OK, to set it in the "blue" directory on left 
                 if (f.valid == 2 && f.sectors.length) { //if not valid, or no sectors (empty file) the file is not displayable, so exit to next "f"
-                    var file = { name: f.name, name83: f.name83, id: _id++, start: f.start, total: f.total, flags: f.flags, recovered: f.recovered, is_dir: f.is_dir};
+                    var file = { name: f.name, name83: f.name83, id: _id++, start: f.start, total: f.total, flags: f.flags, isRecovered: f.isRecovered, is_dir: f.is_dir};
                     if (f.gname83) file.gname83 = f.gname83; //genuine filename with inverted char (non-DOSx compatible)
                     file.data = atr.read_file(f); //atr.read_file() calls sparta.read_file() or dosxe.read_file() accordingly
                     file.dosType = atr.dosType; //copy atr.dosType in the file, DOS type found into the ATR disk is an important information to know
@@ -9206,7 +9243,7 @@
         //(PVB END OF MOD)
 
         m.forEach(container => {
-            container.files.forEach(file => draw_line(`#canvas${file.id}`, info(file), file.recovered, file.is_dir));
+            container.files.forEach(file => draw_line(`#canvas${file.id}`, info(file), file.isRecovered, file.is_dir));
         });
 
         // if no containers (no opened file), then display all supported file types and extensions from _exts list object
@@ -10030,7 +10067,7 @@
                 <i><b>Ctrl+H</b> toggles Hex View</i><br />
                 <i><b>Shift+Click</b> opens Keyboard in Editor</i><br />
             </p>
-            <div style="font-size: xx-small;color: #99C;text-align: center;">JULY 2025 VERSION<br />by PVBest</div>
+            <div style="font-size: xx-small;color: #99C;text-align: center;">AUGUST 2025 VERSION<br />by PVBest</div>
             <input type="file" id="fe" multiple style="display:none" aria-label="Drag files here">
         </nav>
         <main style="border:solid 1px #CCC">
