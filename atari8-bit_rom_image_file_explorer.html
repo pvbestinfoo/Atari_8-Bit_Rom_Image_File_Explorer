@@ -5020,15 +5020,18 @@
     //===================================================================================================
     //===================================================================================================
 
-    function le16(a, i) {
-        return a[i] | ((a[i + 1]) << 8);
+    function le16(a, i) { //read 2 bytes (1 word) little-endian
+        if (!a || (i+1) >= a.length )
+            return null;
+        else
+            return a[i] | ((a[i + 1]) << 8);
     }
 
-    function le24(a, i) {
+    function le24(a, i) { //read 3 bytes little-endian
         return a[i] | ((a[i + 1]) << 8) | ((a[i + 2]) << 16);
     }
-
-    function le32(a, i) {
+ 
+    function le32(a, i) { //read 4 bytes (2 words) little-endian
         return a[i] | ((a[i + 1]) << 8) | ((a[i + 2]) << 16) | ((a[i + 3]) << 24);
     }
 
@@ -6371,11 +6374,11 @@
             var isFirst = true;
             var isRoot;
             var bs = this.atr.blockSect;
-            function set_sect(c, bs) {
-                if (bs == 1) return [c];
-                else return [(c * 2), (c * 2 + 1)];
+            function set_sect(c, bs) { //DOS XE cluster to sector conversion; bs is the sector per cluster value
+                if (bs == 1) return [c]; //bs is 1 then cluster is sector (DD disk)
+                else return [(c * 2), (c * 2 + 1)]; //bs is 2 then one cluster is two sectors (SD & ED disks)
             }
-            function get_file_map(buff, j) {
+            function get_file_map(buff, j) { //The file map consists of clusters, listed in bytes $13-$2A of the directory entry (that is 24 bytes)
                 var mp = [];
                 for (var l = 0; l < 23; l += 2) {
                     mp.push(le16(buff, j + l));
@@ -6383,9 +6386,10 @@
                 return mp;
             }
 
-            var dbuffer = this.read_cluster(dir_cluster); //WIPDOS// check for dbuffer that is null if cluster number not OK
+            var dbuffer = this.read_cluster(dir_cluster); //WIPDOS// check for dbuffer that is null if cluster number not OK //???
             console.log(`DOS XE => ...entering directory at cluster #${dir_cluster}, that is sector ${dir_cluster * (bs == 2 ? 2 : 1)}`);
             var i = 0;
+            var errStr = "";
             while (true) { //search for all the entries from directory clusters. Nota: no need to use the VTOC, because cluster map are not in VTOC for DOS XE
                 if (isFirst) { //set the directory
                     if (!dir_info) { //set a dummy file for the root directory
@@ -6402,10 +6406,22 @@
                     var tbuff = dbuffer;
                     while (true) {
                         var next_dir_cluster = le16(tbuff, 0xF8); //get next directory cluster
-                        if (!next_dir_cluster) break;
+                        if (next_dir_cluster == 0) break; //end of cluster map
+                        if (next_dir_cluster === null) { //error! le16() returns null
+                            errStr = "Next Cluster Error !";
+                            break;
+                        }
                         dir_info.clusters.push(next_dir_cluster);
                         dir_info.sectors = dir_info.sectors.concat(set_sect(next_dir_cluster, bs));
                         tbuff = this.read_cluster(next_dir_cluster);
+                        if (!tbuff) { //error! read_cluster() returns null
+                            errStr = "Can not read cluster !";
+                            break;
+                        }
+                    }
+                    if (errStr) {
+                        console.log("DOS XE => get_dir() error: " + errStr);
+                        break;
                     }
                     dir_info.total = dir_info.clusters.length;
                     dir_info.totalS = dir_info.sectors.length;
@@ -6460,7 +6476,9 @@
                         var cnbr = f.file_map[j];  //read the cluster
                         if (cnbr == 0) break; //no more cluster in the dir entry cluster map, so exit
                         var tbuffer = this.read_cluster(cnbr); //read the cluster map cluster
-                        if (!tbuffer) {efm = 1; break; } //error, cluster number was below 4, or above disk size, so exit
+                        if (!tbuffer) { //error, cluster number was below 4, or above disk size, so exit
+                            efm = 1; break;
+                        } 
                         let tmp = set_sect(cnbr, bs);
                         f.maps = f.maps.concat(tmp); //save the cluster map sector(s)
                         for (var k = 0; k < 250; k+= 2) { //get all the cluster number of the file (only 250 bytes)
@@ -6468,7 +6486,9 @@
                             //WIPDOS// // use 00FA  >File number - $0000 for the root directory to check if OK
                             ptr = le16(tbuffer, k);
                             if (ptr == 0) break; //no more cluster in the cluster map cluster, so exit
-                            if (ptr < 4 || ptr > this.maxCluster ) {efm = 1; break; } //wrong cluster number, so exit
+                            if (ptr < 4 || ptr > this.maxCluster ) { //wrong cluster number, so exit
+                                efm = 1; break;
+                            } 
                             f.clusters.push(ptr); //store cluster in array
                             let tmp = set_sect(ptr, bs);
                             f.sectors = f.sectors.concat(tmp); //save the sector(s)
@@ -6485,7 +6505,7 @@
                 f.fsize = f.len * 250 + f.bflen; //file size in bytes
                 if (!f.is_dir) files.push(f);
                 console.log(`DOS XE => File #${f.numidf} (id#${f.dfnbr}) ${f.name} with flag $${hex(flags,2)} recorded !`);
-                i += 49; //next entry
+                i += 49; //get next entry in the directory
                 if (i >= 0xF5) { //load next directory cluster if any
                     dir_cluster = le16(dbuffer, 0xF8); //get next directory cluster
                     if (!dir_cluster) break; //if zero, no more entry, exit
@@ -6500,7 +6520,7 @@
             var d = this.atr.d;
             var dst = [];
             var src_ofst = this.cluster_offset(n);
-            if (src_ofst < 0) return null;
+            if (src_ofst < 0) return null; //check the cluster validity, exit if error
             for (var i = 0; i < 256; i++) {
                 dst.push(d[src_ofst + i]);
             }
@@ -6533,7 +6553,7 @@
     //0x04 bit 2: is used by MyDOS only, if set means that file has a 16bits sector linking (MyDOS non-DOS2x compatible)
     //0x02 bit 1: is set, file created by DOS2x (if cleared, file created by DOS1). Set also fo a MyDOS file.
     //0x01 bit 0: File Opened for Output for any DOS. Used also by DOS2.5 to indicate that files is stored above sector 719 (and shown with <..>)
-    //examples:
+    //Examples:
     // DOS1: $40=file exists, $60=write-protected file, and $80=file deleted. DOS2: $42=file exists, $62=write-protected file.
     // DOS2.5: $42=existing file available for DOS 2.0; $62= write-protected file available for DOS 2.0;
     //  $03=existing file not available for DOS 2.0; $43=file open for writing and never closed
@@ -7293,7 +7313,9 @@
                 if (this.d[16 + i]) str += String.fromCharCode(this.d[16 + i]);
             }
             var bc = (this.d[16] === 0x58); //"X" boot flag ?
-            if (bc || str == "XF551" || str == "AT810" || str == "AT1050" || str == "SSDD") { //check DOS XE string code
+            var isSig = (str == "XF551" || str == "AT810" || str == "AT1050" || str == "SSDD" || str == "130RAM"); //DOS XE string code 
+            if (!isSig) { if (bc) console.log(" identify_dos() => has found a DOS XE 'X' boot flag, but no DOS XE valid disk signature, so skip it!");}
+            else { // here (isSig || !bc)
                 this.dosXEType = str;
                 //The allocation unit is a "cluster" of 256 bytes, i.e. two physical sectors in SD and ED, and one sector in DD.
                 this.blockSize = 256;
@@ -7302,7 +7324,10 @@
                 this.dir_sector = this.d[16 + 0x1D] * this.blockSect; //directory starts at the cluster number read in $71D of the boot 
                 this.totalBlock = le16(this.d, 16 + 0x18);
                 this.freeBlock = le16(this.d, 16 + 0x1A);
-                if (!bc) this.dirErrorStr = " >'X' byte signature is missing in the DOS XE boot sector";
+                if (!bc) {
+                    this.dirErrorStr = " >'X' byte signature is missing in the DOS XE boot sector";
+                    console.log(" identify_dos() => has found a DOS XE disk image signature but 'X' boot flag is missing!!");
+                }
                 this.vtoc_off = this.sector_offset(this.vtoc1_sect); //data for the DosXE constructor,
                 idos = 5;
                 console.log(" identify_dos() => has found a DOS XE disk image system");
@@ -10067,7 +10092,7 @@
                 <i><b>Ctrl+H</b> toggles Hex View</i><br />
                 <i><b>Shift+Click</b> opens Keyboard in Editor</i><br />
             </p>
-            <div style="font-size: xx-small;color: #99C;text-align: center;">AUGUST 2025 VERSION<br />by PVBest</div>
+            <div style="font-size: xx-small;color: #99C;text-align: center;">NOVEMBER 2025 VERSION<br />by PVBest</div>
             <input type="file" id="fe" multiple style="display:none" aria-label="Drag files here">
         </nav>
         <main style="border:solid 1px #CCC">
