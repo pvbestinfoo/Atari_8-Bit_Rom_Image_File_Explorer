@@ -2905,7 +2905,7 @@
 
         function failed(reason) {
             reason = reason || "Bytes don't look like Basic";
-            console.log("ataribasic (): =>"); //(PVB ADD)
+            console.log("ataribasic (): => reason / basic structure / listing:"); //(PVB ADD)
             console.log(reason);
             console.log(b);
             console.log(listing);
@@ -3060,10 +3060,10 @@
                 var end = a[j + k];
                 var cmd = a[j + k + 1];
                 k += 2;
-                if (cmd >= 56) {
+                if (cmd >= 56) { //$38
                     turbo = true;
-                    if (cmd >= 101)
-                        return failed("Unrecognized command index:" + cmd);    // not basic
+                    if (cmd >= 101) //$65
+                        return failed("Unrecognized command index: " + cmd + " at line #" + listing.length);    // not basic
                 }
 
                 s.tok.push(_basic_commands[cmd]);
@@ -3148,7 +3148,7 @@
                             k = end;
                             break;
                         default: {
-                            var txt;
+                            var txt = '';
                             if (op & 0x80)
                                 txt = b.variable_names[op & 0x7F];
                             else if (!op) {
@@ -3158,11 +3158,11 @@
                                 if (op >= 85) {
                                     turbo = true;
                                     if (op >= 110)
-                                        return failed("Unrecognized operation:" + op);    // not basic
+                                        return failed("Unrecognized operation: " + op);    // not basic
                                 }
                                 txt = _basic_operators[op];
                             }
-                            if (txt == ":" || txt[0] == ' ')
+                            if (txt && (txt == ":" || txt[0] == ' '))
                                 line = line.trim();
                             line += txt;
                             s.tok.push(txt);
@@ -4500,13 +4500,10 @@
         if (disin == '???') valid = false; //disin = disassembled instruction like 'CMP'
         //mark validity, entry and exit points:
         //in the memory flag chart: 
-        // 0x01 = opcode is valid
-        // 0x02 = "BRK" opcode (PVB ADD)
+        // 0x01 = opcode is valid;  0x02 = "BRK" opcode (PVB ADD)
         // 0x04 = entry_point, with 0x80 = 0x84 (PVB ADD)
         // + 0x08 = end of block => request empty line after block
-        // 0x10 = "RTS" opcode
-        // 0x20 = "RTI" opcode
-        // 0x40 = "JMP" opcode
+        // 0x10 = "RTS" opcode;     0x20 = "RTI" opcode;        0x40 = "JMP" opcode
         // + 0x80 = start of block => request empty line before block - target of relative instruction (BEQ..) are flagged with 0x80 to start a new block
         //(PVB MOD) mark validity in flags improvment as described below
         if (valid) { 
@@ -5052,13 +5049,13 @@
     function checkCharInName(d, md) { //d is the data array of the 11 bytes of the filename, md is true if this should be a myDOS fileName
         var len = d.length; //start at end of extension position
         var isIC = false; //inverted char ?
-        var isND = false;  //non DOS char ?
+        var isND = false; //non DOS char ?
         var firstLT = false; //first Letter (not Space) in the name
         while (len-- > 0) {
             if (len == 7 || len == 10) firstLT = false; //reset firstLT at end of name position
             if (d[len] & 0x80) isIC = true; //inverted char ?
-            var c = d[len] & 0x7F; //set normal char for easy check
-            if (c < 0x20 || c >= 0x7D) return 0; //control char, EXIT
+            var c = d[len] & 0x7F; //set normal (and not inverted) char for easy check
+            if (c < 0x20 || c >= 0x7D) return 0; //Atari ctrl char are $1B to $1F and $7D to $7F, ASCII ctrl char are 0 to $1F: if so, EXIT
             //we allow space only at end of extension or at the end of name
             if (c != 0x20) firstLT = true; //first char (non space) 
             else { //it is a space
@@ -6358,10 +6355,10 @@
             this.dir_info = {};
             this.fcount = 1;
         }
-        dosxe_date(b,c) { //funtion dosxe_date() for DOX XE; using bytes b and c; returning a string Y/M/D
-                var d = b[c+1] | ((b[c]) << 8);
-                return ((d >> 9) + 1900) + "/" + (d >> 5 & 0x0F)  + "/" + (d & 0x1F);
-            }
+        dosxe_date(b,c) { //funtion dosxe_date() for DOX XE; using bytes b and c; returning a string D/M/Y
+            var d = b[c+1] | ((b[c]) << 8);
+            return ((d & 0x1F) + "/" + (d >> 5 & 0x0F) + "/" + ((d >> 9) + 1900));
+        }
         cluster_offset(n) { //funtion cluster_offset() for DOX XE, using the n cluster value; returns an interger value for data index in an ATR disk image
             if (n < 4 || n > this.maxCluster) return -1; //error, for files, no use of cluster below the number 4 and above maxCluster
             var ofst = n * 256 + (this.atr.blockSect == 2 ? -128 : -640) + 16;
@@ -6545,13 +6542,13 @@
     //see http://ftp.pigwa.net/stuff/collections/nir_dary_cds/Tech%20Info/DOS.HTM (not accurate enough)
     //and for DOS 3 : https://www.atarimax.com/jindroush.atari.org/afsdos3.html (not accurate neither !)
     // So for accurate information please use this link => http://atariki.krap.pl/index.php/Formaty_system%C3%B3w_plik%C3%B3w
-    //0x80 value: File (or MyDOS DIRECTORY) deleted for any DOS (all other bits are cleared) (may be recovered if not overriden ?)
-    //0x40 bit 6: File exits and in use for any DOS (normal), then bit 7 is clear. Bit cleared for a MyDOS DIRECTORY.
+    //0x80 bit 7: File (or MyDOS DIRECTORY) deleted for any DOS (all other bits are cleared) (may be recovered if not overriden)
+    //0x40 bit 6: File exits and in use for any DOS (normal), then bit 7 (i.e. deleted) is clear. Bit cleared for a MyDOS DIRECTORY.
     //0x20 bit 5: File Locked (protected from overwriting and deleting) for any DOS (appears with '*' in directory).
     //0x10 bit 4: bit set only for MyDOS DIRECTORY (bits 6, 2 and 1 then have the value 0)
     //0x08 bit 3: not used
     //0x04 bit 2: is used by MyDOS only, if set means that file has a 16bits sector linking (MyDOS non-DOS2x compatible)
-    //0x02 bit 1: is set, file created by DOS2x (if cleared, file created by DOS1). Set also fo a MyDOS file.
+    //0x02 bit 1: is set, file created by DOS2x (if cleared, file created by DOS1). Set also for a MyDOS file.
     //0x01 bit 0: File Opened for Output for any DOS. Used also by DOS2.5 to indicate that files is stored above sector 719 (and shown with <..>)
     //Examples:
     // DOS1: $40=file exists, $60=write-protected file, and $80=file deleted. DOS2: $42=file exists, $62=write-protected file.
@@ -6695,28 +6692,35 @@
         //(PVB END OF ADD)
 
         //(PVB MOD) one_dir() improvement, MyDOS subdirectories support, and DOS3 + DOS4 support (with AU block = Allocation Unit block)
-        one_dir(n, sector, idf, subdirname) {// one_dir() is called by get_dir_range() and scan_files()
-            // (PVB COM) 'n' is the dir entry from 1 to 8 (or 1 to 16 in DD & DSDD disk) into the directory sector; idf is the count of file (file number in the directory)
+        one_dir(n, sector, idf, subdirname, extradir) {// one_dir() is called by get_dir_range() and scan_files()
+            // (PVB COM) 'n' is the number of dir entry from 1 to 8 (or 1 to 16 in DD & DSDD disk) into the directory sector; idf is the count of file (file number in the directory)
             // that is also use in DOS file sector control byte; "subdirname" parameter is the name of the parent's MyDOS subdirectory
             var m = 64; //(PVB CONSOLE HINT) limits the consolelog event display for the 64 standard DOS directory entries
             var d = this.d;
             var j = this.sector_offset(sector) + n * 16; //index in the memory for the beginning entry position number "n"
             var dirEntry = [];
+            var df = 0;
             var dosVtocArray = []; //VTOC table of the DOS 3 (sector 24) or DOS 4 (this.vtoc1_sect) //WIPDOS// put dosVtocArray as a global atr variable instead to set it at each one_dir() call ??
-            var tdos = this.dosType; // here tdos is 1 to 4 for DOS1 to DOS4; and 6 to 8 for MyDOS
+            var tdos = Math.trunc(this.dosType); // here tdos is 1 to 4 for DOS1 to DOS4; and 6 to 8 for MyDOS; tdos is 2 for DOS2 or DO2.5
+            var isWrongSector = ""; //to record that file entry start sector is inconsistent
+            var is_stddir = tdos == 2 && !extradir && (sector >= 361 && sector <= 368); //if is_stddir, accept wrong flag, wrong name and wrong start sector
             function rems(odf, type, txt) {
                 return (odf ? " one_dir()=>" : "  ..." ) + type + "! File#" + idf + " " + txt; //error message
             }
             function strSect(n) {
                 return n + " sector" + (n > 1 ? "s" : "");
             }
+            function is_space(d, j) { //function is_space(d, j) returns true if there is 16 $20 bytes from d[j]
+                for (var i = 0; i < 16; i++) {if (d[j + i++] != 0x20) return false;}
+                return true;
+            }
             //check if entry is 16 bytes of $00 nul value, the entry is then empty
-            if (is_zero(d, j, 16)) { //function is_zero() returns true if there is len 00 bytes from d[j]
+            if (is_zero(d, j, 16)) { //reminder: function is_zero(d, j, len) returns true if there is len number of 00 bytes from d[j]
                 //if (idf < m) console.log(" one_dir() =>Error! File#" + idf + " entry is $00 bytes into DOS TOC!"); //(PVB CONSOLE HINT)
                 if (idf < m) console.log(rems(1, "no directory entry", `>empty $00 bytes into DOS TOC!`)); //(PVB CONSOLE HINT)
-                else console.log(" one_dir() =>no directory entry found out of DOS TOC!");
-                return dirEntry; //no dir entry, 16 times $00 bytes found on the dir entry
-            } 
+                else console.log(" one_dir() =>empty entry: no valid directory entry found!");
+                return dirEntry; //no dir entry, 16 times $00 bytes found on the dir entry, null is return
+            }
             if (tdos == 3) { // for DOS 3
                 dosVtocArray = this.read_sector(24); //initialisation of the file layout table (sector 24)
                 dirEntry = {
@@ -6748,7 +6752,7 @@
                 dirEntry.start = this.alloc_unit_sector(dirEntry.startbloc - 8); //Compute start sector = file start sector taken from first sector AU block the DOS4 file
                 dirEntry.fsize = dirEntry.total * this.blockSize; //NOTA: fsize will be computed precisely below, as we don't know how many sectors in the last AU block are for the file
             }
-            else // for ATARI DOS1 & DOS2X and MyDOS
+            else {// for ATARI DOS1 & DOS2X and MyDOS, and unknown DOS disk (tdos = -1) and when searching whole disk)
                 dirEntry = {
                 numidf: idf, // (PVB ADD) the idf to count & identify files
                 flags: d[j],  // Byte 0 : Flag Byte of the DOS2 file
@@ -6758,39 +6762,74 @@
                 name83: toAscii(d, j +5, 11), // Byte 5-15 : 11 char = 8 character filename with spaces at end + 3 character filename extension padded with spaces at end
                 name: toAscii(d, j +5, 8).trimEnd(), // Byte 5-12 : 8 character filename without spaces at end
                 ext: toAscii(d, j +13, 3).trimEnd(), // Byte 13-15 : 3 character filename extension without spaces at end
+                foob: extradir || false,
                 dir_name: subdirname ? subdirname : "" //add parent's name if in a subdirectory (for MyDOS)
                 };
-            if (dirEntry.ext)
+                df = dirEntry.flags; // flag validity check... (not for DOS3 nor DOS4)
+                var dfs = (df & 0x9C) == 0; // $80 is excluded, accept only right DOS2x flag, that is b0xx0-00xx ($40+$20+$02+$01) filtered by &$9C
+                var dfl = (df & 0x88) == 0; // $80 is excluded, accept only right DOS1, DOS2x and MyDOS flag, that is b0xxX-0Xxx filtered by &$88
+                var isWrongFlag = false;
+                if (extradir) { //extradir is when nothing has been found in normal directory, so make a whole disk search
+                    if (!dfs) isWrongFlag = true; //accept only right & strict DOS2x flag, that is b0xx0-00xx ($40+$20+$02+$01)
+                }
+                else { //not extradir, normal directory, not a whole disk search
+                    if (tdos <= 6) { //DOS1, DOS2x and MyDOS compatible, and unknown DOS
+                        if (is_stddir && !dfl) //accept the flag, but do a message
+                            console.log(rems(1, "wrong directory entry", `>DOS2x file flag $${hdx(df)} is inconsistent!`)); //(PVB CONSOLE HINT)
+                        if (this.broken_dir && df != 0x80 && !dfs) isWrongFlag = true; //don't accept if broken_dir (we are beyond the first correct entries)
+                    }
+                    //else //other DOS //do nothing special
+                }
+                if (isWrongFlag) { //wrong inconsistent flag
+                    console.log(" one_dir() =>wrong file flag: no valid directory entry found!");
+                    return dirEntry; //no dir entry, as DOS file flag is inconsistent
+                }
+            }
+            if (dirEntry.ext) {
                 dirEntry.name += '.' + dirEntry.ext; //"name" is like "dup.sys", without space but with ".ext"
+                if (tdos == 2) dirEntry.dispName = toAscii(d, j +5, 8) + '.' + dirEntry.ext; //"dispName" is like "dup     .s"
+            }
+            else if (tdos == 2) dirEntry.dispName = dirEntry.name;
             //(PVB MOD & ADD) Improvement of DOS file detection and validation
             //dirEntry.valid: 1 is valid (readable) and can be listed with error (but not read), 0 is not valid (not listed), 2 is OK fully valid (no error, so displayed in the official blue DIR)
             dirEntry.valid = 2; //assume it is fully valid
+            dirEntry.erf = ''; // to save and display the file issue/error
+            df = d[j]; //the flag is the first byte
             var title = (tdos != 3) ? d.slice(j +5, j +16) : d.slice(j +1, j +12); //name in an Ascii byte array
             var isName = checkCharInName(title, this.dosType >= 7); //return null if name is invalid, -1 if name is non-DOS, 1 if name is OK //previously isAtariNameChar()
-            //(PVB COM) following 2 conditions to check are the minimum to get a file from the dir entry: a valid name & a consistant start sector
-            if (!isName) { //isName null
+            //(PVB COM) following conditions to check are the minimum to get a file from the dir entry: a valid name & a consistant start sector
+            if (!isName || (!is_stddir && isName < 0)) { //isName null, or isName contains nonDOS char out of the normal directory sectors
                 dirEntry.valid = 0; //not a valid entry
                 if (idf < m) console.log(rems(1, "ERROR", `>filename has invalid chars!`)); //(PVB CONSOLE HINT)
             }
+            else if (!df) { //this is to check of the null flag because all DOS directory stops at first $00 flag value (info: 16 zero bytes are detected by function is_zero() above)
+                dirEntry.valid = 0; //not a valid entry, end of DOS directory
+                if (idf < m) console.log(rems(1, "ERROR", `flag value is $00!`)); //(PVB CONSOLE HINT)
+            }
             else if ((dirEntry.start < this.file_start) || (dirEntry.start > this.sector_count)) {
-                dirEntry.valid = 0; //not a valid entry, if start sector is not OK, we can not go further, file maybe found by scan_files() as FILE_XX.DAT
-                if (idf < m) console.log(rems(1, "ERROR", `>file has inconsistent $${hex(dirEntry.start, 3)} start sector!`)); //(PVB CONSOLE HINT)
+                var s1 = ` >inconsistent $${hex(dirEntry.start, 3)} start sector`;
+                dirEntry.valid = 0; //not a valid entry if start sector is not OK 
+                if (is_stddir) { //but if in DOS2x and in first sector of directory, then keep it valid to display it by the Tool
+                    isWrongSector = s1;
+                    dirEntry.valid = 1; 
+                    dirEntry.sectors = [];
+                }
+                if (idf < m) console.log(rems(1, "ERROR", `${s1}!`)); //(PVB CONSOLE HINT)
             }
             if (!dirEntry.valid) return []; //EXIT
             //(PVB COM) dir.total is checked below while reading sectors of the file
-            //here filename is valid start sector is OK
+            //here at this stage, the entry filename is valid and start sector is accepted
             dirEntry.gname83 = ''; //original filename, eventually with inverted char (not DOSx compatible)
             title.forEach(c => dirEntry.gname83 += String.fromCharCode(c)); //original filename is set from 'title'
-            dirEntry.erf = ''; // to save and display the file issue/error
             if (isName < 0) {
                 dirEntry.erf += " >non-DOS2x char in filename";
                 if (idf < m) console.log(rems(1,"WARNING", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT)
             }
-            if (d[j] == 0x80) { //$80 byte flag is "file deletedé, as per DOS1, DOS2x, DOS3 and DOS4
+            if (df == 0x80) { //$80 byte flag is "file deleted", as per all DOS
                 dirEntry.erf += " >DOS deleted file";
                 if (idf < m) console.log(rems(1, "WARNING", `'${dirEntry.name}'${dirEntry.erf}, file could be lost...`)); //(PVB CONSOLE HINT)
             }
-            else if (tdos > 5 && d[j] & 0x10 && dirEntry.total == 8) { //MyDOS subdirectory handling (flag = 0x10, 8 sectors length)
+            else if (tdos > 5 && (df & 0x10) && dirEntry.total == 8) { //MyDOS subdirectory handling (flag = 0x10 and 8 sectors length)
                 dirEntry.is_dir = true; //it's a MyDOS subdirectory
                 dirEntry.sectors = []; //add subdir sectors
                 var s = dirEntry.start;
@@ -6798,25 +6837,28 @@
                     dirEntry.sectors[s+k] = { sector: s+k, slen: this.sector_size, snext: 0, fbloc: k }; //sectors init
                 }
                 console.log(rems(1, "INFO", `>found that '${dirEntry.name}' is a MyDOS valid subdirectory!`)); //(PVB CONSOLE HINT)
-                //console.log(" _one_dir() =>We have found the MyDOS #" + idf + "'" + dirEntry.name + "' subdirectory!"); //(PVB CONSOLE HINT)
                 return dirEntry;
             }
             else { //standard file, not deleted, and not a MyDOS subdirectory
-                if (tdos == 3 && !(d[j] & 0xC0)) { //$C0 is the valid flag for DOS3
+                if (tdos == 3 && !(df & 0xC0)) { // b11xx-xxxx is the valid flag for DOS3
                     dirEntry.valid = 1; //readable, but wrong ?
-                    dirEntry.erf += " >DOS3 dir entry not valid (no $0C flag)";
+                    dirEntry.erf += " >DOS3 dir entry not valid (no $C0 flag)";
                     if (idf < m)
                         console.log(rems(1, "WARNING", `'${dirEntry.name}'${dirEntry.erf}, file does not exits`)); //(PVB CONSOLE HINT)
-                        //console.log(" _one_dir() =>Error! File#" + idf + ": " + dirEntry.name + " (DOS3) is not existing (no 0xC0 flag)!"); //(PVB CONSOLE HINT)
                 }
-                if ((d[j] & 0x41) == 0x41) { //$41 means not deleted and Open, applies to DOS2x, DOS3, DOS4 & MysDOS
-                     dirEntry.erf += " >file not closed (open-for-writing flag)";
+                if (tdos == 2 && !(df == 0x80 || (df & 0x9E) == 0x02)) { //valid DOS2x flag should have following bit: b0xx0-001x (mask &$9E), or should be $80
+                    dirEntry.erf += " >INFO: Non-DOS2x flag"; //then display flag issue in the directory listing
+                    if (idf < m)
+                        console.log(rems(1, "", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT)
+                }
+                if (df != 0x03 && df !=0x23 && (df & 0x01)) { //$01 means "Open for Writting & Not Closed", applies to DOS2x, DOS3, DOS4 & MysDOS
+                    dirEntry.erf += " >file not closed (open-for-writing flag)"; //not a DOS1 feature, and DOS2.5 flag $03 or $23 oar for file above sector 720
                     if (idf < m)
                         console.log(rems(1, "INFO", `'${dirEntry.name}'${dirEntry.erf}, file may be wrong...`)); //(PVB CONSOLE HINT)
-                        //console.log(" _one_dir() =>Info: File#" + idf + ": " + dirEntry.name + " is a non-closed file that is open for writing, so may be wrong!"); //(PVB CONSOLE HINT)
                 }
             }
-            if (!dirEntry.valid) return dirEntry; //returns an empty dirEntry if non valid
+            if (isWrongSector) dirEntry.erf += s1 + " =>no file!"; //add the "no file" information if inconsistent start sector
+            if (!dirEntry.valid || isWrongSector) return dirEntry; //returns an empty dirEntry if non valid, or no file
             // get all sectors associated with this entry & check validity
             dirEntry.sectors = []; //initialisation of the DOS file sector table
             var len = 0; //init of bytes per sector
@@ -6826,9 +6868,9 @@
             var nsector = 0;
             var nextbloc = -1;
             var fcs = " =>file corrupted!";
-            var doss = tdos > 4 ? "MyDOS" : ("DOS" + tdos);
+            var doss = tdos > 4 ? "MyDOS" : ("DOS" + this.dosType);
             var nbrsect = dirEntry.total;
-            console.log(" one_dir()=>File#" + idf + " >" + doss + " '" + dirEntry.name + "' entry check... "); //error message)
+            console.log(" one_dir()=>File#" + idf + " >" + doss + " '" + dirEntry.name + "' entry with $" + hdx(dirEntry.flags) + " flag checking... "); //error message)
             if (tdos != 3 && tdos != 4) { //for standard DOS (not DOS3) (nota for MyDOS, tdos can be 6, 7 or 8)
                 var md16 = (tdos == 7 || tdos == 8); //MyDOS 16 bits not-DOS2x compatible
                 nsector = dirEntry.start; //current sector is the first one
@@ -6836,8 +6878,7 @@
                 var dosOne = tdos == 1;
                 var scnt = 1; //file sector counter
                 console.log("  ...File#" + idf + " >" + doss + " '" + dirEntry.name + "' reading sector chain...");
-                while (true) {
-                //for (var k = 0; k < nbrsect; k++) { //up to the total number of block (sector) set in the dir entry
+                while (true) { //previously//for (var k = 0; k < nbrsect; k++) { //up to the total number of block (sector) set in the dir entry
                     var clbp = this.sector_offset(nsector) + this.sector_size - 1; //current sector last byte pointer
                     //get file sector FMS bytes
                     len = d[clbp]; //the last byte of the sector if the number of data bytes in the sector
@@ -6848,9 +6889,6 @@
                         dirEntry.erf += ` >FMS bytes null @${nsector}`;
                         if (scnt == 1) dirEntry.erf += " start sector =>no file!";
                         else dirEntry.erf += ", " + strSect(scnt-1) + " read" + fcs;
-                        //dirEntry.erf += " >FMS bytes null @" + (scnt == 1 ? " start sector " : "") + nsector;
-                        //if (scnt == 1) dirEntry.erf += " =>no file!";
-                        //else dirEntry.erf += " (" + strSect(scnt-1) + " read)" + fcs;
                         console.log(rems(0, "ERROR", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT)
                         break;
                     }
@@ -6867,8 +6905,8 @@
                     if (!dosOne && scnt == 1 && this.sector_size == 128) { //check if it's a DOS1 file on a DOS2x disk
                         if ((next && len == 0 && dirEntry.total > 1) || (!next && (len & 0x80) && dirEntry.total == 1)) { //case for a first sector of a DOS1 file // or a single sector DOS 1 file
                             dosOne = true;
-                            dirEntry.erf += " >DOS1 file";
-                            console.log("  ...file seems to be a DOS1 file");
+                            dirEntry.erf += " >DOS1 file FMS";
+                            console.log("  ...file seems to be a DOS1 file FMS");
                         }
                     }
                     if (md16) { //MyDOS 16 bits not-DOS2x compatible, no use of file Id
@@ -6900,13 +6938,24 @@
                         }
                     }
                     if (!dosOne) {  //Note DOS 1, that is standard DOS number of bytes in sector in len variable
+                        //is_good_len = true IF (endsector AND length of data to read is <= (sector size - 3) AND not zero)
+                        // OR IF (NOT endsector AND length of data to read is = (sector size - 3))
                         var is_good_len = (next == 0) ? (len <= (this.sector_size - 3) && len) : len == (this.sector_size - 3);
-                        //is_good_len = true IF (end sector AND& length of data to read is <= (sector size - 3) AND not zero) OR (NOT end sector AND length of data to read is = (sector size - 3))
+                        var is_short_len = false;
+                        //For DOS 2x, to be less restrictive and accept sector length FMS byte lower than $7D or $FD before EOF
+                        if ((tdos == 2) && next != 0 && len <= (this.sector_size - 3) && len > 0)
+                            is_short_len = true;
                         if (!is_good_len) {
-                            dirEntry.valid = 1;
-                            dirEntry.erf += " >bad data length $" + hdx(len) + " in FMS @" + nsector + fcs;
-                            console.log(rems(0, "WARNING", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT)
-                            break; //exit loop
+                            if (is_short_len) { //Accept and inform for the lower data length FMS byte 
+                                dirEntry.erf += " >INFO: lower data length byte $" + hdx(len) + " in FMS @" + nsector;
+                                console.log(rems(0, "", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT)
+                            }
+                            else { //otherwise, put a wrong length warning
+                                dirEntry.valid = 1;
+                                dirEntry.erf += " >bad data length $" + hdx(len) + " in FMS @" + nsector + fcs;
+                                console.log(rems(0, "WARNING", `'${dirEntry.name}'${dirEntry.erf}`)); //(PVB CONSOLE HINT)
+                                break; //exit loop
+                            }
                         }
                     }
                     else { //DOS1 //use of FMS K bit => number of bytes in sector OR file sector count in len variable //(PVB TODO) count the file sector when Z is set
@@ -6942,7 +6991,7 @@
                     dirEntry.sectors[nsector] = { sector: nsector, slen: len, fbloc: (scnt-1), snext: next, fid: num, slen: len}; //save the sector (offset = sector number)
                         
                     if (next == 0) { // check real end of file (here len is OK and file Id is OK)
-                        var wbns = " =>wrong block number in file dir entry!";
+                        var wbns = " =>wrong number of blocks in entry!";
                         if (scnt < nbrsect) { //End-Of-File reached before the file total number of sector to read
                             //trust the end of file in FMS and not from dirEntry.total, so keep dirEntry.valid = 2
                             dirEntry.erf += " >End-Of-File @" + nsector + ", " + scnt + "/" + strSect(nbrsect) + " read" + wbns;
@@ -7017,6 +7066,7 @@
                         }
                     }
                     dirEntry.totalSect = fNbrSect;
+                    if (!derr && dirEntry.flags == 0x80) dirEntry.erf += " =>file still available"; //no error AND deleted file => file is still ok
                 }
             }
             else if (tdos == 4) {
@@ -7082,24 +7132,37 @@
             return dirEntry;
         }
 
-        // Search the entire disk for sneaky directory entries
-        get_dir_range(from, to, subdirname) { // get_dir_range() is called by get_dir(); DOS XE and SpartaDOS not handled because they have dedicated routine
-            //(PVB COM) Search in the directory table that is (from, to) sectors ('to' is not included !);
-            //(PVB ADD) the "subdirname" parameter in case of a MyDOS subdirectory
+        // Search the entire disk for sneaky directory entries // not for DOS XE and not for SpartaDOS as they have dedicated get_dir() routine
+        get_dir_range(from, to, subdirname, extradir) { // get_dir_range() is called by get_dir(); Search in the directory table that is (from, to) sectors ('to' is not included !);
+            //(PVB ADD) the "subdirname" parameter in case of a MyDOS subdirectory //extradir' is true for seeking out of DOS2x original location
             var dirs = [];
             var idf = 0;
+            this.numoffirst = -1;
+            this.broken_dir = false;
             //Set number of entry in a directory sector for Double Density DOS: only DOS4 in DD has 16 entries in one 256 bytes sector; DOS2.0d and MyDOS keep 8 entries in 256 bytes sector
-            var nbrofentry = (this.isDos4 && this.sector_size == 256) ? 16 : 8; //otherwise there is always 8 entries per sector of 128 bytes
+            var nbrofentry = (this.isDos4 && this.sector_size == 256) ? 16 : 8; //otherwise there is always 8 entries per sector
             for (var i = from; i < to; i++) {   // (PVB COM) "i" stands for the sector range of the dir table (like the 8 sectors 361-368)
-                for (var n = 0; n < nbrofentry; n++) {   // (PVB COM) "n" stands for the 8 lines of file entry in each sector of the dir table
-                    var dir = this.one_dir(n, i, idf++, subdirname); // (PVB COM) "dir" gets the content of one file entry
-                    if (dir.valid) {
+                for (var n = 0; n < nbrofentry; n++) {   // (PVB COM) "n" stands for each of the 8 (or 16) entries in each sector of the dir table
+                    var dir = this.one_dir(n, i, idf++, subdirname, extradir); // (PVB COM) "dir" gets the content of one file entry
+                    if (dir.valid) { //record only the dir.valid "1" and "2"
+                        if (this.numoffirst < 0) {
+                            this.numoffirst = dir.numidf; //init and set the nbr of the first valid file
+                            if (dir.numidf > 0) this.broken_dir = true; //for valid dir, the first file numidf must be 0, otherwise directory is "broken"
+                        }
+                        //tag as "foob" the entry to be displayed in italic, file out of bound in DOS1/DOS2x, or the non-close & empty file in DOS3
+                        if ((this.broken_dir && this.dosType < 3) || (this.dosType == 3 && dir.flags == 0xC1 && !dir.fsize))
+                            dir.foob = true;
+                        if (!extradir && this.broken_dir && dir.valid == 2 && this.dosType < 3) //only for DOS 1, 2 & 2.5, if valid entry in "broken" dir
+                            dir.erf += " =>id# is out of directory, but <b>file is valid</b>";
                         if (!this.dir_sector)
-                            this.dir_sector = i; //first sector stored in dir_sector if it was not set
+                            this.dir_sector = i; //first sector of directory stored in dir_sector if it was not set
                         dirs.push(dir);
                     }
+                    else {
+                        this.broken_dir = true; //if not dir.valid, it is a null entry, so directory stops, and next entry with greater #id are "broken", i.e. out of normal directory range
+                    }
                     if (dir.is_dir) { //(PVB ADD) if this is a MyDOS directory, then recurse
-                        dirs = dirs.concat(this.get_dir_range(dir.start, dir.start + 7, dir.name)); //7 sectors
+                        dirs = dirs.concat(this.get_dir_range(dir.start, dir.start + 7, dir.name, extradir)); //7 sectors
                     }
                 }
             }
@@ -7128,52 +7191,57 @@
                 fl.total = fl.sectors.length;
                 dirs.push(fl);
             }
-            else if (this.isDos3 || this.isDos4) { //for DOS3 & DOS4; the directory sectors are just before the VTOC se"ctor
+            else if (this.isDos3 || this.isDos4) { //for DOS3 & DOS4; the directory sectors are just before the VTOC sector
                 console.log("get_dir() => Retreiving the DOS3/DOS4 disk directory at sectors [" + this.dir_sector + "-" + this.vtoc1_sect + "]...");
-                dirs = this.get_dir_range(this.dir_sector, this.vtoc1_sect); //from first sector argument, to the second sector argument that is not included
+                dirs = this.get_dir_range(this.dir_sector, this.vtoc1_sect, "", false); //from first sector argument, to the second sector argument that is not included
                 if (dirs.length < 1 ) {
                     console.log("get_dir() => No DOS3/DOS4 directory entry found!");
                 }
             }
-            else if (this.dosType > 0 || this.dosType == -1) { //(PVB COM) for not DOS3 nor DOS4
+            else if (this.dosType > 0 || this.dosType == -1) { //(PVB COM) not for DOS3 nor DOS4, but for DOS1 DOS2x & MyDOS
                 console.log("get_dir() => Retreiving DOS1, DOS2x or MyDOS disk directory at 361-368...");
-                dirs = this.get_dir_range(361, 369); //369 not included
-                if (dirs.length < 1 && this.dosType < 8) { //(PVB MOD) Not for MyDOS4.5x HD disk
-                    console.log("get_dir() => No DOS2x directory found at 361-368.... let's try into the whole disk...");
-                    dirs = this.get_dir_range(4, this.sector_count);  // try the whole disk
+                dirs = this.get_dir_range(361, 369, "", false); //369 not included
+                if (dirs.length < 1) { // if nothing found in standard directory...
+                    if (this.dosType < 7) { //(PVB MOD) Not for MyDOS not DOS2x compatible (16bits), and not for  MyDOS4.5x HD disk
+                        console.log("get_dir() => No DOS2x directory found at 361-368.... let's try into the whole disk...");
+                        dirs = this.get_dir_range(4, this.sector_count, "", true);  // try the whole disk
+                    }
                 }
-                if (this.dir_sector == 0) { // if nothing found...
+                if (this.dir_sector == 0) { // if nothing valid found... //PVB TODO This code seems meaningless... to be checked//
                     console.log("get_dir() => No DOS2x directory entry found on whole disk");
                     this.dir_sector = 361;  // didn't find one, so use default (that is sector 361)
                 }
             }
-            if (this.dosType == -1 || (this.dosType > 1 && this.dosType < 3) || this.dosType == 6) { //if no DOS found, or for DOS2x, or for MyDOS compatible with DOS2x 
+            //if disk has no DOS, or for DOS2x and for MyDOS compatible with DOS2x => look for lost file data, corresponding (or not) to a wrong entry
+            if (this.dosType == -1 || (this.dosType > 1 && this.dosType < 3) || this.dosType == 6) { //(PVB TODO) Scan files() only if not a DOS2x disk ?
                 console.log("get_dir() => Try and find files that don't have a real directory entry like the erased ones...");
-                //(PVB TODO) Scan files() only if not a DOS2x disk ?
                 this.scan_files(dirs);      // try and find files that don't have a real directory entry
             }
-            return dirs; //(PVB COM) complete directory table is returned, 'dirs' is empty if no file found
+            return dirs; //(PVB COM) full 'dirs' directory table is returned, with 'dirs' null if no valid entry found
         }
 
         //(PVB MOD & ADD) Rewrite the scan_files(dirs) function to retrieve and recover lost or hidden files (min 2 sectors !) 
         scan_files(dirs) { //scan_files() is called by get_dir(), only for DOS2x and MyDOS system
             var d = this.d;
             var sSectors = [];
-            //(PVB TODO) check the previous utility of "used" ? in the original TOOL //WIP may be make a map of the disk used ?
-            /*var used = []; dirs.forEach(dir => dir.sectors.forEach(s => used[s] = dir)); //last directory entry
-            dirs.forEach(dir => used[dir.start] = dir); //record each dir entry in an array with its start sector as index */
+            //(PVB MOD) using the "used" array for sector that belongs to valid DOS files
+            var used = [];
+            dirs.forEach(dir => { //mark every sector of valid files as "true", which means no recovery is needed
+                if (dir.valid == 2) dir.sectors.forEach(s => used[s.sector] = true);
+            }); 
             var files = [];
-            for (var i = 4; i <= this.sector_count ; i++) { //map the sector of the disk
+            for (var i = 4; i <= this.sector_count ; i++) { //map all the sectors of the disk into sSectors array
                 var end = this.sector_offset(i) + this.sector_size;
                 var len = d[end - 1];
                 var next = ((d[end - 3] & 0x03) << 8) | (d[end - 2]);
                 var zero = is_zero(d, this.sector_offset(i), this.sector_size);
-                if (!zero && (len == (this.sector_size - 3) || ((len <= (this.sector_size - 3)) && next == 0))) //len is valid
+                var isGoodLen = (len == (this.sector_size - 3)) || (next == 0 && len <= (this.sector_size - 3) && len > 0);
+                if (!zero && isGoodLen) //len is valid
                     sSectors[i] = { sect: i, len: len, next: next, num: d[end - 3] >> 2 };
                 else //means file broken by wrong sector, like an empty BAD sector, filed with zero or inconsistant data
                     sSectors[i] = { sect: i, len: 0, next: 0, num: -1 };
             }
-            sSectors.forEach(s => { //add previous sector
+            sSectors.forEach(s => { //add previous sector if same file number on a sector
                 var n = sSectors[s.next];
                 if (n) {
                     if (n.num == s.num)
@@ -7181,11 +7249,11 @@
                     //else s.next = 0;
                 }                    
             });
-            sSectors.forEach(s => {
-                if (!s.prev && s.len) { //this is the pilot sector, as the first sector of a file and no prev sector
+            sSectors.forEach(s => { //check FMS links of every found file on disk
+                //start at the pilot sector, which is the first sector of a file that has no prev sector
+                if (!s.prev && s.len && !used[s.sect]) { // but don't do anything if the sector is used (=belongs to a valid file)
                     s.total = 0;
                     s.bytes = 0;
-                    s.used = 0;
                     s.error = 0;
                     s.fsectors = [];
                     var n = s; //first sector is copied into n, s is kept into the loop
@@ -7193,7 +7261,7 @@
                         s.fsectors[n.sect] = {sector: n.sect, slen: n.len, fbloc: s.total, snext: n.next, fid: s.num};
                         s.bytes += n.len; //s.bytes = number of bytes in the file
                         s.total++; //s.total = number of sector
-                        if (n.next == 0) //end of file, exit loop
+                        if (n.next == 0 || n.next <= n.sect) //end of file, or next is the same sector or lower number, then exit loop
                             break;
                         var ns = sSectors[n.next]; //get next sector
                         if (n != s) { //exclude first sector
@@ -7234,8 +7302,8 @@
             var i = 0;
             files.forEach(f => {
                 if (!match(f.sect, f.num, f.error, f.bytes)) { //not valid file ?
-                    var name = "FILE_" + hex(i) + ".DAT";
-                    var name83 = "FILE_" + hex(i++) + " DAT";
+                    var name = "FILE_" + hex(i, 3) + ".DAT";
+                    var name83 = "FILE_" + hex(i++, 3) + "DAT";
                     var ext3 = "DAT";
                     // Reconstruct stomped dirs
                     if (dirs && dirs.length && _correlated) { //file is in TOC Dir entry
@@ -7288,7 +7356,7 @@
             //let's assume that return value is (-1) if no DOS found; (0) for Sparta;
             // (1) for DOS1; (2) for DOS2.0; (2.5) for DOS2.5; (3) for DOS3; (4) for DOS4; (5) for DOS XE
             // (6) for MyDOS (DOS2x compatible); (7) for MyDOS with flag 03 (not DOS2x compatible); (8) for MyDOS4.5x for more than 1440 sector;
-            // (9) [futur myDOS ?] ; (10) for KBOOT; (11) for Multiboot disk //WIP//
+            // (9) [reserved for futur myDOS ?] ; (10) for KBOOT; (11) [for Multiboot disk //WIP//]
             if (this.sparta)
                 return 0;
             //function checkZeroIn() called to check if TOC contains $00, from byte index s to e (e not included)
@@ -7338,7 +7406,7 @@
             var t = le16(vtocSect, 1); //read total formated sector
             var s = le16(vtocSect, 3); //read remainning free sector
             var sc = this.sector_count;
-            str = "";   
+            str = "";
             bc = (this.d[16] + this.d[17] + this.d[18] + this.d[19]) === 10; //standard 1st 4 bytes of DOS boot contains '$00 $03 $00 $07'
             var vtocb = vtocSect[0]; //first byte of VTOC is the DOS signature = VTOC's Byte = vtocb
             var vts = (vtocSect[0x37] === 0) && checkZeroIn(vtocSect, 6, 10); //DOS or MyDOS: Byte $37 of VTOC is zero and bytes 6 to 9 of the VTOC are zero
@@ -7372,26 +7440,30 @@
                 return idos; //MyDOS is 6, 7 or 8
             }
             //====== Check for DOS 1& DOS 2x... ======//
-             //(PVB TODO) better DOS2x detection, support DOS loaders (with special boot), and valid DOS by loading the first one_dir ??
-             var bintadd = le16(this.d, 16+4); //boot $704: DOS initialization address; $1540 for DOS2x
-             var sasa = le16(this.d, 16+12);   //boot $70C: Buffer allocation address for drives and files, $1A7C for DOS2, $19CC for DOS2.5
-             //VTOC's Byte = vtocb must be 01 for DOS1 ans 02 for DOS2x, contain $00 at offset $37, and has a comprehensive total-of-sector value
-             if (vtocb == 0x01 && t == 0x2C5 && vts) { //let's be strict for DOS1
+            //(PVB TODO) better DOS2x detection, support DOS loaders (with special boot), and valid DOS by loading the first one_dir ??
+            var bintadd = le16(this.d, 16+4); //boot $704:BINTAD: DOS initialization address; $1540 for DOS2x
+            var sasa = le16(this.d, 16+12);   //boot $70C: Buffer allocation address for drives and files, $1A7C for DOS2, $19CC for DOS2.5
+            //Number of formated sectors are modified by DOS2x loader disks ==> TODO: check this rules
+            //I've noticed, based upon my Return on Experience: $2BF, $3C3, $3F3 and $3E9 formated sectors have been found on my ATR disks
+            var isLoader2 = t == 0x2BF || t == 0x2A4;  //Boot loader for DOS2
+            var isLoader25 = t == 0x3C3 || t == 0x3F3 || t == 0x3E9;  //Boot loader for DOS2.5
+            //VTOC's Byte = vtocb must be 01 for DOS1 ans 02 for DOS2x, contain $00 at offset $37, and has a comprehensive total-of-sector value
+            if (vtocb == 0x01 && t == 0x2C5 && vts) { //let's be strict for DOS1
                 if (sc == 1040) str += " >720-sector DOS 1.0 disk on a 1040-sector ED disk";
                 this.file_start = 2;
                 idos = 1; //DOS 1 (SD only)
             }
-            else if (vtocb == 0x02 && (t == 0x2BF || t == 0x2C3) && vts) { //seems to be a DOS2.O disk, so check vtocb, bc & sasa
+            else if (vtocb == 0x02 && (t == 0x2C3 || isLoader2) && vts) { //seems to be a DOS2.O disk, so check vtocb, bc & sasa
                 if (sc == 1040) str += " >720-sector DOS 2.0 disk on a 1040-sector ED disk";
                 if (sc == 720 && bc && bintadd == 0x1540 && sasa == 0x19CC) idos = 2.5; //DOS2.5 on a 720-sector (SD) disk
                 else if (bc && bintadd == 0x1540 && sasa == 0x1A7C) idos = 2; //DOS2.0S (SD) or DOS2.0D (DD & SD)
-                else { //note: t == $2BF formated sectors have been found on some modified DOS2 loader disks ==> TODO: check this
+                else { 
                     str += (str ? "\n;" : "") + " INFO: This is not a genuine SD DOS 2.0S disk or DD DOS 2.0D disk";
+                    if (isLoader2) str += ", and disk could have a DOS Loader";
                     idos = 2; //DOS2.0 based disk
                 }
             }
-            else if (vtocb == 0x02 && (t == 0x3F2 || t == 0x3F3 || t == 0x3E9) && vts) { //seems to be a DOS2.5 disk
-                //note: $3F3 and $3E9 formated sectors have been found on some modified DOS2.5 loader disks ==> TODO: check this
+            else if (vtocb == 0x02 && (t == 0x3F2 || isLoader25) && vts) { //seems to be a DOS2.5 disk
                 if (sc == 1040) {
                     s = s + le16(this.d, (this.sector_offset(1024) + 0x7A)); //compute free sector number
                     this.vtoc2_sect = 1024;
@@ -7403,11 +7475,17 @@
                     str += "\n; >VTOC2 is missing, free blocks value is wrong";
                 }
                 //else this is a DOS2.5 disk on unknown disk image? should not appears, so it's a boot program disk
-                if (!(bc && bintadd == 0x1540 && sasa == 0x19CC && t == 0x3F2 && sc == 1040))
+                if (!(bc && bintadd == 0x1540 && sasa == 0x19CC && t == 0x3F2 && sc == 1040)) {
                     str += (str ? "\n;" : "") + " INFO: This is not a genuine 1040-sector ED DOS 2.5 disk";
+                    if (isLoader25) str += ", and disk could have a DOS Loader";
+                }
                 idos = 2.5; //DOS2.5 for ED enhanced disk and SD (but not for DD disk)
             }
-            if (idos > 0) {
+            else if (vtocb == 0x03 && t == 0x2C3 && vts) { //seems to be a Top Dos 1.5 Disk
+                str += ": This is not a genuine SD DOS 2.0S disk, but may be a non-supported 'Top Dos 1.5' disk";
+                idos = 2;
+            }
+            if (idos > 0) { //DOS 2x has been found
                 this.totalBlock = t;
                 this.freeBlock = s;
                 if (!checkZeroIn(vtocSect, 101, 128))
@@ -8071,7 +8149,6 @@
                 // (PVB MOD) add the hexa number sector, and count sectors from 1 and not zero (there is no sector zero for the atari SIO)
                 var sect = n + 1;
                 txt.push("; Sector " + hex(sect, 3) + " (" + sect + ")" + (zero ? " (" + ssize + " zeros)" : ""));
-                //(previously) txt.push("; Sector " + n + (zero ? " (" + size + " zeros)":""));
                 if (!zero) // (PVB COM) if the sector is not empty then we display the dump
                     txt.push(hex_dump(d, offset, ssize, 4));
                 txt.push("");
@@ -8088,7 +8165,7 @@
         //(PVB ADD) pad_dec() function
         function pad_dec(x, n) { // pad_dec(n) is used to pad the value general
             x = "" + x; //convert x number into a string 
-            return x.padStart(n, ' ');
+            return x.padStart(n, ' '); //padStart()) function adds a n repeated char in front of the passed string
         }
         //(PVB ADD) pad_dir(s, n) function
         function pad_dir(s, n){ //function pad_dir(s, n) is used to pad the display of the Directory (add space char after string)
@@ -8097,7 +8174,7 @@
             return s;
         }
         //(PVB ADD) pad_dtime(x) function
-        function pad_dtime(x, t) {
+        function pad_dtime(x, t) { //if t, then it is a time so use a ":" as separator, otherwise it's a date so use a "/" as separator
             var c = t ? ":" : "/";
             var s = String(x & 0xFF).padStart(2,"0") + c + String((x >> 8) & 0xFF).padStart(2,"0") + c + String((x >> 16) & 0xFF).padStart(2,"0");
             return s;
@@ -8223,12 +8300,11 @@
             txt.push("; " + bi + pad_hex(_br[k[i]]) + " " + k[i] + bic);
             //(PVB ADD) display more information about boot
             if (i == 3) {//(PVB COM) 3rd value => check the jump
-                if (d[22] == 0x4C) {
-                    //(PVB COM) test of the JUMP $4C to BCONT
+                if (d[22] == 0x4C) { //(PVB COM) test of the JUMP $4C to BCONT
                     txt.push("; Boot execution start with a JUMP to BCONT=$" + hex(_br[k[4]],4));
                     i++; //so do not display BCONT again
                 }
-                else {
+                else { //no JUMP
                     txt.push("; Boot execution start at BLDADDR+6=$" + hex(_br[k[2]]+6,4));
                     bi = "<i>"; //(PVB COM) set text in italic because should not be valid for a non DOS disk
                     bic = "</i>";
@@ -8258,37 +8334,61 @@
             txt.push(`;\n; SpartaDOS version is $${hex(br.version,2)} that is ${v}`);
         }
         txt.push(";");
-        
         // Scan files/sectors //(PVB ADD) Prepare data for the Disk Sector Dump and display the file directory list
         //(PVB MOD) cancel the use of get_dir() in this fucntion & add the restructured feature //previously //var dirs = atr.get_dir();
         var dirs = [];
+        var numofwrong = 0; //number of wrong DOS entry
+        var numofextra = 0; //number of hidden DOS entry
+        var numofrecov = 0; //number of recovered DOS entry
         var blocsectors = []; //array for display a file and its block / sector in the sector listing
         //(PVB ADD) display the directory of DOS files
         txt.push("");
         if (f.dosdir && f.dosdir.length) { //OK, there is a Directory and Atari files, list them
-            if (sparta) //no "save all files" for sparta, there is no use of such possibility
-                txt.push(`; The following SpartaDOS files has been found in the <i>"${atr.name}"</i> disk image`);
-            else { //not a sparta, and there is a Directory, and Atari files
+            var nbroffile = f.dosdir.length;
+            f.dosdir.forEach(fn => {
+                        if (fn.valid == 1) numofwrong++;
+                        if (fn.foob) numofextra++;
+                        if (fn.isRecovered) numofrecov++;
+            });
+            if (sparta) //no "save all files" button for Sparta (this would be not easy as Sparta usually has a lots of entries)
+                txt.push(`; <b>SpartaDOS disk image <i>"${atr.name}"</i> contains the following directory with ${nbroffile} entries:</b>`);
+            else if (atr.dosType == 5) { //DOS XE
+                txt.push(`; <b>DOS XE disk image <i>"${atr.name}"</i> contains the following directory with ${nbroffile} entries:</b>`);
+            }
+            else if (atr.dosType == 10) { //KBoot
+                txt.push(`; <b><i>"${atr.name}"</i> KBOOT disk image contains the following file:</b>`);
+            }
+            else { //It's neither Sparta nor DOS XE, and there's an Atari directory and files. So, for DOS1, DOS2x, DOS3, DOS4, and MyDOS, display the number of the different entry types
+                var btmp = "";
                 if (atr.dosType < 4) //add [save all valid files] only for DOS1 to DOS3 (small disk with few files)
-                    var btmp = `<button style="float:right" type="button" title="=extract all the files from disk image (use with care)" onclick="save_as_dsk('ALL')">Download all valid files</button>`;
-                txt.push(`; <i>"${atr.name}"</i> has a directory with the following DOS files: ${btmp}`);
+                    btmp = `<button style="float:right" type="button" title="=extract all the files from disk image (use with care)" onclick="save_as_dsk('ALL')">Download all valid files</button>`;
+                var s4 = "";
+                if (numofextra || numofrecov)
+                    s4 += ` (including ${numofextra ? (numofextra + " hidden") : ""}${numofextra && numofrecov ? " and " : ""}${numofrecov ? (numofrecov + " recovered file data") : ""})`;
+                txt.push(`; <b><i>"${atr.name}"</i> disk image has a total of ${nbroffile} DOS entr${nbroffile > 1 ? "ies": "y"}${s4}</b> ${btmp}`);
+                if (numofwrong) txt.push(`; <i>which ${numofwrong} ${numofwrong > 1 ? "are": "is"} non-valid DOS entr${numofwrong > 1 ? "ies": "y"} (no corresponding file on disk)</i>`);
             }
         }
-        else if (!atr.restructured)//no DIR found
-            txt.push(`; <i>"${atr.name}"</i> has no identified DOS files\n`);
-        else
-            txt.push(`; No directory was searched into the restructured disk image file\n`);
+        else if (!atr.restructured) { //no DIR nor entries found
+            if (atr.dosType == -1) //because it is not a DOS disk
+                txt.push(`; <b><i>"${atr.name}"</i> has no identified DOS directory entry nor DOS files</b>\n`);
+            else //because it is a DOS disk but directory was empty, no DOS file found
+                txt.push(`; <b><i>"${atr.name}"</i> has an empty DOS directory, or no valid DOS files</b>\n`);
+        }
+        else //atr.restructured
+            txt.push(`; <b>No directory was found into the restructured disk image file</b>\n`);
         
         var strList = "";
         var isDos34 = atr.isDos3 || atr.isDos4;
         if (!atr.restructured && f.dosdir.length) {
             var blkstr = (isDos34 || atr.isDosXE) ? (atr.blockSect + " sectors = " + atr.blockSize) : ("1 sector of " + atr.sector_size);
-            txt.push("; <b>Directory on disk (1 block = " + blkstr + " bytes):</b>");
+            txt.push(";");
+            txt.push("; <u>List of DOS entries and/or file data found on disk (1 block = " + blkstr + " bytes):</u>");
             txt.push("; FileId Flag Name          StartSector NbrBlocks   FileSize bytes  Info");
             //        ; #1     $80  12345678.123  $000(0000)  $000(0000)  $12345(123456)  xxxx
             dirs = f.dosdir;
             //(PVB END OF ADD)
-            //(PVB MOD) add the directory listing //previously// dirs.forEach(dir => dir.sectors.forEach(s => { sectors[s.sector] = { dir: dir, sector: s } }));
+            //(PVB MOD) add the directory listing
             dirs.forEach(fe => { //for each file entry from the dos directory
                 var dt = "";
                 var isDir = fe.is_dir ? true : false; //DOS directory
@@ -8335,29 +8435,31 @@
                     dt = " [Id $" + hdx(fe.dfnbr) + "]";
                     if (fe.numidf) dt += "[Creation date:" + fe.cdate + "; Mod date:" + fe.mdate + "]";
                 }
-                //Display directories listing
+                //Display directory found file-entry listing
                 if (isDir) strList += "<b>"; //Directory diplayed in bold
-                if (fe.isRecovered ) strList += "<i>"; //DOS2x recovered file or data are displayed in italic
-                //strList += ";" + (fe.numidf == '=>' ? pad_dir(("(#"+ fe.fnum + ")"),6) : pad_dir((" #"+ fe.numidf),8)); //FileId
-                //strList += (fe.numidf == '=>' ? "=> --  " : ("$" + pad_dir(hex(fe.flags,2),4))) + pad_dir(fe.name, 13); //the recovered ones
+                if (fe.isRecovered || fe.foob) strList += "<i>"; //DOS2x recovered file or data are displayed in italic
                 strList += ";" + (fe.isRecovered ? pad_dir(("(#"+ fe.numidf + ")"),6) : pad_dir((" #"+ fe.numidf),8)); //FileId
-                strList += (fe.isRecovered ? "=> --  " : ("$" + pad_dir(hex(fe.flags,2),4))) + pad_dir(fe.name, 13); //the recovered ones
+                strList += (fe.isRecovered ? "=> --  " : ("$" + pad_dir(hex(fe.flags,2),4))); //the recovered ones & normal ones
+                if (fe.dispName)
+                    strList += escHtmlString(pad_dir(fe.dispName, 13)); //in order to display filename with HMTL char, like ">"...
+                else
+                    strList += escHtmlString(pad_dir(fe.name, 13));
                 strList += (" $"+ hex(fe.start,3) + pad_dir((" (" + fe.start + ")"), 7)); //start sector
                 strList += (" $"+ hex(fe.total,3) + pad_dir((" (" + fe.total + ")"), 7)); //total blocks
                 strList += (" $"+ hex(fe.fsize,5) + pad_dir((" (" + fe.fsize + ")"), 9)); //file size
                 if (fe.erf) strList += fe.erf; else strList += dt;
-                if ((atr.isDosXE || sparta) && fe.numidf == 0) strList += "[ROOT MAIN DIRECTORY]"; //first entry for SpartaDOS or DOS XE is MAIN
+                if ((atr.isDosXE || sparta) && fe.numidf == 0)
+                    strList += "[ROOT MAIN DIRECTORY]"; //first entry for SpartaDOS or DOS XE is MAIN
                 else { //if not Sparta nor DOS XE first entry"
                     if (isDir) strList += "[DIR]";  // show "DIR" text if isDir
                     if (fe.dir_name) strList += "[Parent is " + fe.dir_name + "]"; //show parent "dir_name" if not empty
                 }
                 //Check the cases which identify an empty file, whatever DOS type (0 bytes directory is OK)
                 if (fe.valid != 1 && (!fe.fsize || !fe.sectors.length) && !isDir) strList += " =>empty entry"; 
-                //if file number is "=>" then it is an hidden/ canceled file that may be recovered
-                //strList += (fe.numidf == '=>') ? (" =>data may be recovered ?\n" ) : "\n";
+                //If file has isRecovered tag then it is an hidden/ canceled file that may be recovered
                 strList += fe.isRecovered ? " =>data may be recovered ?\n" : "\n";
                 if (isDir) strList += "</b>";
-                if (fe.isRecovered ) strList += "</i>";
+                if (fe.isRecovered || fe.foob) strList += "</i>";
             });
             txt.push(strList + ";");
         }
@@ -8670,7 +8772,8 @@
             var str = '[! ERROR while trying to display file Id #' + id + ' "' + f.name + '"!]\n[See HTML Console log for details & Please report the bug to development team]';
             console.log(str);
             console.log(err);
-            _h('#show', '<span style="color:red;">' + str + '</span>');
+            if (!_q('#show')) alert(str + "\n" + err); //add an alert dialogbox if #show is not set
+            else _h('#show', '<span style="color:red;">' + str + '</span>');
         }
     }
 
@@ -8907,7 +9010,7 @@
             var dirs = atr.get_dir();
             dirs.forEach(f => { //purpose here is to get type of each Atari DOS file, and if OK, to set it in the "blue" directory on left 
                 if (f.valid == 2 && f.sectors.length) { //if not valid, or no sectors (empty file) the file is not displayable, so exit to next "f"
-                    var file = { name: f.name, name83: f.name83, id: _id++, start: f.start, total: f.total, flags: f.flags, isRecovered: f.isRecovered, is_dir: f.is_dir};
+                    var file = { name: f.name, name83: f.name83, id: _id++, start: f.start, total: f.total, flags: f.flags, isRecovered: (f.isRecovered || f.foob), is_dir: f.is_dir};
                     if (f.gname83) file.gname83 = f.gname83; //genuine filename with inverted char (non-DOSx compatible)
                     file.data = atr.read_file(f); //atr.read_file() calls sparta.read_file() or dosxe.read_file() accordingly
                     file.dosType = atr.dosType; //copy atr.dosType in the file, DOS type found into the ATR disk is an important information to know
@@ -10092,7 +10195,7 @@
                 <i><b>Ctrl+H</b> toggles Hex View</i><br />
                 <i><b>Shift+Click</b> opens Keyboard in Editor</i><br />
             </p>
-            <div style="font-size: xx-small;color: #99C;text-align: center;">NOVEMBER 2025 VERSION<br />by PVBest</div>
+            <div style="font-size: xx-small;color: #99C;text-align: center;">MARCH 2026 VERSION<br />by PVBest</div>
             <input type="file" id="fe" multiple style="display:none" aria-label="Drag files here">
         </nav>
         <main style="border:solid 1px #CCC">
