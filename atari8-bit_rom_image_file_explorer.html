@@ -2854,15 +2854,15 @@
     // Disassemble atari basic
 
     var _basic_commands = [
-        // 56 in classic Basic
+        // 56 in classic Basic //from 0 to $37/55
         "REM", "DATA", "INPUT", "COLOR", "LIST", "ENTER", "LET", "IF", "FOR", "NEXT", "GOTO",
         "GO TO", "GOSUB", "TRAP", "BYE", "CONT", "COM", "CLOSE", "CLR", "DEG", "DIM", "END",
         "NEW", "OPEN", "LOAD", "SAVE", "STATUS", "NOTE", "POINT", "XIO", "ON", "POKE", "PRINT",
         "RAD", "READ", "RESTORE", "RETURN", "RUN", "STOP", "POP", "?", "GET", "PUT", "GRAPHICS",
         "PLOT", "POSITION", "DOS", "DRAWTO", "SETCOLOR", "LOCATE", "SOUND", "LPRINT", "CSAVE",
         "CLOAD", "LET_", "ERROR",
-
-        // Turbo Basic
+        // Turbo Basic (TBXL)// Start from $38/56 to $64/100 //Tokens with codes above 100 are undefined
+        // http://atariki.krap.pl/index.php/Tokeny_Turbo_BASIC_XL
         "DPOKE ", "MOVE ", "-MOVE ", "*F", "REPEAT ", "UNTIL ", "WHILE ", "WEND ",
         "ELSE ", "ENDIF ", "BPUT ", "BGET ", "FILLTO ", "DO ", "LOOP ", "EXIT ",
         "DIR ", "LOCK ", "UNLOCK ", "RENAME ", "DELETE ", "PAUSE ", "TIME$= ", "PROC ",
@@ -2874,14 +2874,15 @@
     ];
 
     var _basic_operators = [
+        //Operator and function tokens have values ​​from 0 to 127 (of which Atari BASIC uses the range $0E/14 to $54/84)
         "_0", "_1", "_2", "_3", "_4", "_5", "_6", "_7", "_8", "_9", "_A", "_B", "_C", "_D",
         "NCONST", "SCONST", "NOUSE", "NOUSE", ",", "$", ":", ";", "EOL", " GOTO ", " GOSUB ", " TO ",
         " STEP ", " THEN ", "#", "<=", "<>", ">=", "<", ">", "=", "^", "*", "+", "-", "/", " NOT ", " OR ", " AND ",
         "(", ")", "=", "=", "<=", "<>", ">=", "<", ">", "=", "+", "-", "(", "(", "(", "(", "(", ",",
         "STR$", "CHR$", "USR", "ASC", "VAL", "LEN", "ADR", "ATN", "COS", "PEEK", "SIN", "RND", "FRE",
         "EXP", "LOG", "CLOG", "SQR", "SGN", "ABS", "INT", "PADDLE", "STICK", "PTRIG", "STRIG",
-
-        // Turbo Basic
+        // Turbo Basic //Tokens with codes $0E/14 to $54/84 are the same as in Atari BASIC //starts at $55/85 to $6D/109
+        // Tokens with codes above 109 are undefined.
         "DPEEK", "&", "!", "INSTR", "INKEY$", " EXOR ", "HEX$", "DEC",
         " DIV ", "FRAC", "TIME$", "TIME", " MOD ", "EXEC ", "RND", "RAND",
         "TRUNC", "%0", "%1", "%2", "%3", "GO# ", "UINSTR", "ERR", "ERL"
@@ -2889,7 +2890,7 @@
 
     function ataribasic(a, i, len) {
         var indenting = _checks['indent']; //identing == 0 (off) or 1 (on)
-        var b = {
+        var b = { //Basic file header
             lomem: le16(a, i + 0),   // should be zero
             vnt: le16(a, i + 2),     // start of variable name table
             vnte: le16(a, i + 4),    // end of variable name table
@@ -2898,8 +2899,8 @@
             stmcur: le16(a, i + 10), // current line (line 32768)
             starp: le16(a, i + 12),  // end of token area, start of stacks
 
-            variable_names: [],
-            variable_values: [],
+            variable_names: [], //Variable names are stored in char per char, last is ORed with $80. Sometimes the name area is overwritten with $9B chars
+            variable_values: [], //8 bytes per value: 1x BYTE btType - type of data; 1x BYTE btNumber - offset to variable name table; 6x BYTEs	data - depends on btType
             statements: []
         }
 
@@ -2949,7 +2950,6 @@
                 n += c & 0xF;
             }
             e = (e - 68) * 2;
-
             switch (e) {	// Math.pow was not producing integers
                 case -1: return n / 10;
                 case -2: return n / 100;
@@ -2964,10 +2964,10 @@
         var n = '';
         var nmap = {};
         var ncount = 0;
-        for (var j = vnt_begin; j < vnt_end; j++) {
-            if ((a[j] & 0x7F) < 0x21 ) return failed("Invalid Basic variable name"); //(PVB ADD)
-            n += String.fromCharCode(a[j] & 0x7F);
-            if (a[j] & 0x80) {
+        //get the variable name array and put into b.variable_names
+        for (var j = vnt_begin; j < vnt_end; j++) { 
+            n += String.fromCharCode(a[j] & 0x7F); // normal char for variable name
+            if (a[j] & 0x80) { //end of variable name if char >=128
                 if (n.length && n[n.length - 1] == '(')
                     n = n.substr(0, n.length - 1);	// 
                 if (nmap[n])
@@ -2978,18 +2978,16 @@
                 n = '';
             }
         }
-
-        if (Object.keys(nmap).length == 1) {
+        if (Object.keys(nmap).length == 1) { //error fixed ? //previously// if (Object.keys(nmap).length != ncount) {
             console.log("ataribasic(): resetting variable names");
             b.variable_names = [];  // name table was set to the same value: reset it
         }
-
         var vvt_begin = i + b.vvt;	// NOT SURE WHY THESE ARE +1
         var tokens_begin = i + b.stmtab;
         var vid = 0;
+        //now get the variable values table and put into b.variable_values
         for (var j = vvt_begin; j < tokens_begin; j += 8) {
             var v = { name: b.variable_names[a[j + 1]] };
-
             if (!v.name) {  // someone got rid of all the variable names. make new ones
                 var ch = String.fromCharCode(65 + (vid % 26));    // 'A'
                 var n = Math.floor(vid++ / 26);
@@ -3003,7 +3001,6 @@
                 }
                 b.variable_names[a[j + 1]] = v.name = ch;     // make up a name if missing
             }
-
             var p0 = le16(a, j + 2);
             var p1 = le16(a, j + 4);
             var p2 = le16(a, j + 6);
@@ -3026,17 +3023,16 @@
             }
             b.variable_values.push(v);
         }
-
         //var tokens_end = i+b.stmcur;
         var tokens_end = i + b.starp; // kings cribbage see https://www.atariarchives.org/mapping/memorymap.php STMCUR
         var turbo = false;
-
         var listing = [];
         var indent = 0;
+        //Token Area - now get the token, for the statements to put into d.statements and make the Basic listing
         for (var j = tokens_begin; j < tokens_end;) {
             var s = { tok: [] };
-            s.lineno = le16(a, j);
-            var len = a[j + 2];
+            s.lineno = le16(a, j); //first is the WORD for BASIC line number
+            var len = a[j + 2]; //then a byte for the line length
 
             if (s.lineno == 32768 || len == 0)
                 break; // stmcur
@@ -3052,32 +3048,29 @@
                 else
                     line = line + " ".repeat(2 * indent);
             }
-
-            // Parse statements
+            // Parse statements (token)
             var k = 3;
             var op;
             while (k < len) {
-                var end = a[j + k];
-                var cmd = a[j + k + 1];
-                k += 2;
+                var end = a[j + k]; //end = token length, including BYTE token, and additional data (including operand)
+                var cmd = a[j + k + 1]; //token command
+                k += 2; //additional data of the token command
                 if (cmd >= 56) { //$38
                     turbo = true;
                     if (cmd >= 101) //$65
                         return failed("Unrecognized command index: " + cmd + " at line #" + listing.length);    // not basic
                 }
-
                 s.tok.push(_basic_commands[cmd]);
-                if (cmd != 0x36) {	// slient LET
+                if (cmd != 0x36) {	// silent LET
                     line += _basic_commands[cmd];
                     if (line[line.length - 1] != ' ')
                         line += ' ';
                 }
-
                 if (cmd < 2) {	// REM,DATA
                     var txt = '';
                     while (k < end) {
                         var c = a[j + k++];
-                        if (c == 0x9B)
+                        if (c == 0x9B) //Tokens 0 (REM) & 1 (DATA) are followed by string ending by $9B.
                             break;
                         txt += String.fromCharCode(c);
                     }
@@ -3085,18 +3078,16 @@
                     line += txt;
                     k = end;
                 }
-
                 // Check indent:
                 //         FOR            REPEAT         WHILE          DO             PROC
                 if (cmd == 0x08 || cmd == 0x3C || cmd == 0x3E || cmd == 0x45 || cmd == 0x4F)
                     indent += indenting;
                 //              IF
-                else if (cmd == 0x07) {
-                    // Verify if there is THEN
+                else if (cmd == 0x07) { // Verify if there is THEN
                     var got_then = false;
                     for (var l = k; l < end; l++) {
                         var op = a[j + l];
-                        if (op == 0x1B) {
+                        if (op == 0x1B) { //$1B = 27 = THEN
                             got_then = true;
                             break;
                         }
@@ -3113,7 +3104,7 @@
                 //              NEXT           UNTIL          WEND           LOOP           ENDPROC        ENDIF
                 else if (cmd == 0x09 || cmd == 0x3D || cmd == 0x3F || cmd == 0x46 || cmd == 0x51 || cmd == 0x41)
                     indent = indent > 0 ? indent - 1 : 0;
-
+                //now get the operands or additional data that can follow token command
                 while (k < end) {
                     op = a[j + k++];
                     switch (op) {
@@ -3129,7 +3120,7 @@
                             s.tok.push(txt);
                             line += '"' + txt + '"';
                             break;
-                        case 0x0D: // BCD hex const
+                        case 0x0D: // BCD hex const (TBXL)
                             var n = bcd(a, j + k);
                             var c = 1;
                             while (n >= (1 << c * 8))
@@ -3149,20 +3140,29 @@
                             break;
                         default: {
                             var txt = '';
-                            if (op & 0x80)
-                                txt = b.variable_names[op & 0x7F];
-                            else if (!op) {
+                            var indx = 0; //(PVB ADD) to save the index in variable_names
+                            if (op & 0x80) { //op is >= 128, this is a variable name
+                                indx = op & 0x7F;
+                                txt = b.variable_names[indx];
+                            }
+                            else if (!op) { //op is null, this is extra variable name for TBXL, indexed by k
                                 turbo = true;
-                                txt = b.variable_names[a[j + k++] ^ 0x80];    // thx dragonstomper
-                            } else {
-                                if (op >= 85) {
+                                console.log("ataribasic(): Turbo BASIC variable has been identified");
+                                indx = a[j + k++] ^ 0x80;
+                                txt = b.variable_names[indx];    // thx dragonstomper
+                            }
+                            else {
+                                if (op >= 85) { //op >=85 this is a TBXL operand
                                     turbo = true;
-                                    if (op >= 110)
+                                    console.log("ataribasic(): Turbo BASIC operation has been identified");
+                                    if (op >= 110) //op >=110 unknown operation
                                         return failed("Unrecognized operation: " + op);    // not basic
                                 }
-                                txt = _basic_operators[op];
+                                txt = _basic_operators[op]; //there is always a txt from  _basic_operators
                             }
-                            if (txt && (txt == ":" || txt[0] == ' '))
+                            if (txt == undefined) //(PVB ADD) check the validity of txt at b.variable_names[indx];
+                                return failed("Error of variable name, index " + indx + " is out of variable array length " +  b.variable_names.length);//(PVB ADD) Error
+                            if (txt == ":" || txt[0] == ' ')
                                 line = line.trim();
                             line += txt;
                             s.tok.push(txt);
@@ -10195,7 +10195,7 @@
                 <i><b>Ctrl+H</b> toggles Hex View</i><br />
                 <i><b>Shift+Click</b> opens Keyboard in Editor</i><br />
             </p>
-            <div style="font-size: xx-small;color: #99C;text-align: center;">MARCH 2026 VERSION<br />by PVBest</div>
+            <div style="font-size: xx-small;color: #99C;text-align: center;">MARCH 2026 VERSION #2<br />by PVBest</div>
             <input type="file" id="fe" multiple style="display:none" aria-label="Drag files here">
         </nav>
         <main style="border:solid 1px #CCC">
